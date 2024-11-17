@@ -146,6 +146,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("MainActivity", "其他错误", e);
             }
         });
+        try {
+            update();
+        } catch (Exception e) {
+            Log.e("MainActivity", "更新错误", e);
+        }
         Context appContext = getApplicationContext();
         JobScheduler scheduler = (JobScheduler) appContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         ComponentName componentName = new ComponentName(appContext, MyJobService.class);
