@@ -32,7 +32,7 @@ android {
 }
 
 dependencies {
-
+//    implementation(libs.markdownview.android)
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.work.runtime)
     implementation(libs.localbroadcastmanager)
     implementation(libs.eventbus)
+    implementation(libs.zxing.android.embedded)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

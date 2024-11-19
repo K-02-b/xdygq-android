@@ -1,6 +1,8 @@
 package com.example.xdygq3;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -12,10 +14,15 @@ import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.TypedValue;
@@ -35,6 +42,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -42,6 +50,14 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.ChecksumException;
+import com.google.zxing.FormatException;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.RGBLuminanceSource;
+import com.google.zxing.Result;
+import com.google.zxing.common.HybridBinarizer;
+import com.google.zxing.qrcode.QRCodeReader;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.EventBusException;
@@ -51,6 +67,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -185,6 +202,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    protected final static int REQUEST_CODE_NOTIFICATION_PERMISSION = 100;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -192,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
             setContentView(R.layout.activity_main);
             setToolbar();
         } catch (NullPointerException e) {
-            Log.e("MainActivity", "布局或工具栏资源错误: ", e);
+            Log.e("MainActivity", "布局或工具栏资源错误", e);
         }
         try {
             File path = getFilesDir();
@@ -225,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
 //        }
         try {
             BottomNavigationView bottomNavigationView = findViewById(R.id.bottomView);
-            bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
+            bottomNavigationView.setOnItemSelectedListener(item -> {
                 int action = getActionFromItemId(item.getItemId());
                 switch (action) {
                     case ACTION_HOME:
@@ -247,6 +266,25 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MainActivity", "EventBus 注册错误", e);
         }
         try {
+            hasLED = NotificationManagerCompat.from(context).areNotificationsEnabled();
+        } catch (Exception e) {
+            Log.e("MainActivity", "LED 状态获取错误", e);
+        }
+        try {
+            if (notificationManager == null) {
+                notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    // 尚未获得通知权限，请求权限
+                    ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_CODE_NOTIFICATION_PERMISSION);
+                    return; // 等待权限请求结果
+                }
+            }
+        } catch (Exception e) {
+            Log.e("MainActivity", "通知管理器错误", e);
+        }
+        try {
             thread = new Thread(task);
             thread.start();
         } catch (Exception e) {
@@ -264,11 +302,7 @@ public class MainActivity extends AppCompatActivity {
 
     boolean isBatteryOptimizeStatus() {
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return powerManager.isIgnoringBatteryOptimizations(this.getPackageName());
-        } else {
-            return true;
-        }
+        return powerManager.isIgnoringBatteryOptimizations(this.getPackageName());
     }
 
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
@@ -283,13 +317,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK) return;
         if (requestCode == 337845818) {
-            if (resultCode == RESULT_OK) {
-                if (thread.isAlive())
-                    thread.interrupt();
-                thread = new Thread(task);
-                thread.start();
-            }
+            if (thread.isAlive())
+                thread.interrupt();
+            thread = new Thread(task);
+            thread.start();
         } else if (requestCode == REQUEST_CODE_NOTIFICATIONS) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
@@ -297,33 +330,71 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         } else if (requestCode == REQUEST_CODE_IGNORE_BATTERY_OPTIMIZATIONS) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (!isBatteryOptimizeStatus()) {
-                    Toast.makeText(this, "未允许忽略电池优化", Toast.LENGTH_SHORT).show();
-                }
+            if (!isBatteryOptimizeStatus()) {
+                Toast.makeText(this, "未允许忽略电池优化", Toast.LENGTH_SHORT).show();
             }
+        } else if (requestCode == REQUEST_CODE_PICK_COOKIE_IMAGE) {
+            Uri imageUri = data.getData();
+            importCookie(imageUri);
         }
     }
 
-    public void sendNotification(Context context, int id, String title, String content) {
-        if (notificationManager == null)
-            notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            CharSequence name = "新消息通知";
-            String description = "当有新消息时通知";
-            int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel channel = new NotificationChannel("my_channel_id", name, importance);
-            channel.setDescription(description);
-            notificationManager.createNotificationChannel(channel);
+    protected void importCookie(Uri imageUri) {
+        try (InputStream inputStream = getContentResolver().openInputStream(imageUri)) {
+            String cookieJson = scanQRCode(inputStream);
+            Log.d("MainActivity", cookieJson);
+            JsonObject object = new Gson().fromJson(cookieJson, JsonObject.class).getAsJsonObject();
+            config.UserHash = object.get("cookie").getAsString();
+            shareData.config = config;
+            String contentData = new Gson().toJson(config);
+            Functions.PutFile(context, shareData.DATAFILE, contentData);
+            String name = object.get("name").getAsString();
+            hint("导入饼干 " + name + " 成功");
+        } catch (Exception e) {
+            Log.e("MainActivity", "图片导入错误", e);
+            hint("导入饼干失败");
         }
+    }
+
+    protected String scanQRCode(InputStream inputStream) {
+        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int[] pixels = new int[width * height];
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+        RGBLuminanceSource source = new RGBLuminanceSource(width, height, pixels);
+        BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
+        QRCodeReader reader = new QRCodeReader();
+        try {
+            Result result = reader.decode(binaryBitmap);
+            return result.getText();
+        } catch (NotFoundException | ChecksumException | FormatException e) {
+            Log.e("MainActivity", "二维码扫描错误", e);
+        }
+        return "";
+    }
+
+    boolean hasLED = false;
+
+    public void sendNotification(Context context, int id, String title, String content) {
+        CharSequence name = "新消息通知";
+        String description = "当有新消息时通知";
+        int importance = NotificationManager.IMPORTANCE_HIGH;
+        NotificationChannel channel = new NotificationChannel("my_channel_id", name, importance);
+        channel.setDescription(description);
+        if (hasLED) {
+            channel.enableLights(true);
+            channel.setLightColor(Color.BLUE);
+        }
+        notificationManager.createNotificationChannel(channel);
         Intent resultIntent = new Intent(this, MainActivity.class);
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         resultIntent.setAction("NOTIFICATION_CLICKED");
         resultIntent.putExtra("id", Integer.toString(id));
         PendingIntent resultPendingIntent = PendingIntent.getActivity(this, id, resultIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        Notification notification = new NotificationCompat.Builder(context, "my_channel_id")
-                .setSmallIcon(R.drawable.notification_icon)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "my_channel_id");
+        builder.setSmallIcon(R.drawable.notification_icon)
                 .setContentTitle(title)
                 .setContentText(content)
                 .setAutoCancel(true)
@@ -331,8 +402,24 @@ public class MainActivity extends AppCompatActivity {
                 .setDefaults(Notification.DEFAULT_ALL)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setContentIntent(resultPendingIntent)
-                .build();
+                .setColor(Color.BLUE);
+        if (hasLED) {
+            builder.setLights(Color.BLUE, 1000, 0);
+        }
+        Notification notification = builder.build();
         notificationManager.notify(id, notification);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE_NOTIFICATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                hint("获取通知权限成功");
+            } else {
+                hint("其实我还是挺好奇你不开启通知权限为什么要用这玩意、、、");
+            }
+        }
     }
 
     protected void update() {
@@ -453,6 +540,7 @@ public class MainActivity extends AppCompatActivity {
         menu.add(0, 1, 1, "设置");
         menu.add(0, 2, 2, "导出配置");
         menu.add(0, 3, 3, "导入配置");
+        menu.add(0, 4, 4, "从二维码导入饼干");
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -522,6 +610,9 @@ public class MainActivity extends AppCompatActivity {
                         .setCancelable(true)
                         .show();
                 break;
+            case 4:
+                importCookie();
+                break;
         }
         if (dialog != null) {
             try {
@@ -561,6 +652,21 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    protected final static int REQUEST_CODE_PICK_COOKIE_IMAGE = 101;
+
+    protected void importCookie() {
+        Intent intent;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+            intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, 1);
+        } else {
+            intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false);
+        }
+        intent.setType("image/*");
+        startActivityForResult(intent, REQUEST_CODE_PICK_COOKIE_IMAGE);
     }
 
     @Override
