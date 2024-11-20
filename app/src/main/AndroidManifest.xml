@@ -45,6 +45,20 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".OtherToolActivity"
+            android:exported="true">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".SaveThread"
+            android:exported="true">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".AboutActivity"
             android:exported="false">
             <intent-filter>

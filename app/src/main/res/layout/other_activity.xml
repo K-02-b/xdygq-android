@@ -6,7 +6,7 @@
     android:layout_height="match_parent">
 
     <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar_about"
+        android:id="@+id/toolbar_other"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="?attr/colorPrimary"
@@ -17,17 +17,18 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
+        android:id="@+id/recyclerView_contacts"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/bottomView_about"
+        app:layout_constraintBottom_toTopOf="@id/bottomView_other"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar_about" />
+        app:layout_constraintTop_toBottomOf="@id/toolbar_other" />
+
 
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomView_about"
+        android:id="@+id/bottomView_other"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"

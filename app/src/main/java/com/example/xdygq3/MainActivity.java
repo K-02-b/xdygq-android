@@ -82,13 +82,10 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    protected final static int JobInfo_ID = 337845818;
     protected final static int REQUEST_CODE_NOTIFICATION_PERMISSION = 100;
     protected final static String NotificationChannelID = "NotificationID";
     protected final static int JUMP_PAGE_RESULT_ID = 337845818;
     protected final static int REQUEST_CODE_PICK_COOKIE_IMAGE = 101;
-    private static final int ACTION_HOME = 1;
-    private static final int ACTION_ABOUT = 2;
     private static final int REQUEST_CODE_NOTIFICATIONS = 1;
     private static final int REQUEST_CODE_IGNORE_BATTERY_OPTIMIZATIONS = 2;
     public Context context = this;
@@ -182,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
         Context appContext = getApplicationContext();
         JobScheduler scheduler = (JobScheduler) appContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         ComponentName componentName = new ComponentName(appContext, MyJobService.class);
-        JobInfo jobInfo = new JobInfo.Builder(JobInfo_ID, componentName)
+        JobInfo jobInfo = new JobInfo.Builder(shareData.JobInfo_ID, componentName)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setMinimumLatency(config.DelayTime)
                 .setBackoffCriteria(config.DelayTime * 2L, JobInfo.BACKOFF_POLICY_LINEAR)
@@ -197,12 +194,6 @@ public class MainActivity extends AppCompatActivity {
 //        intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
 //        startActivityForResult(intent, REQUEST_CODE_IGNORE_BATTERY_OPTIMIZATIONS);
 //    }
-
-    private int getActionFromItemId(int itemId) {
-        if (itemId == R.id.navigation_item1) return ACTION_HOME;
-        else if (itemId == R.id.navigation_item2) return ACTION_ABOUT;
-        return 0;
-    }
 
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
@@ -260,13 +251,18 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        }
         try {
-            BottomNavigationView bottomNavigationView = findViewById(R.id.bottomView);
+            BottomNavigationView bottomNavigationView = findViewById(R.id.bottomView_main);
+            bottomNavigationView.getMenu().findItem(R.id.navigation_item1).setChecked(true);
             bottomNavigationView.setOnItemSelectedListener(item -> {
-                int action = getActionFromItemId(item.getItemId());
+                int action = shareData.getActionFromItemId(item.getItemId());
                 switch (action) {
-                    case ACTION_HOME:
+                    case shareData.ACTION_HOME:
                         return true;
-                    case ACTION_ABOUT:
+                    case shareData.ACTION_OTHER:
+                        Intent otherIntent = new Intent(this, OtherToolActivity.class);
+                        startActivity(otherIntent);
+                        return false;
+                    case shareData.ACTION_ABOUT:
                         Intent aboutIntent = new Intent(this, AboutActivity.class);
                         startActivity(aboutIntent);
                         return false;

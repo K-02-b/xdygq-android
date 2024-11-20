@@ -3,9 +3,7 @@ package com.example.xdygq3;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.view.MenuItem;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,13 +13,8 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class AboutActivity extends AppCompatActivity {
-
-    private BottomNavigationView bottomNavigationView;
-    private static final int ACTION_HOME = 1;
-    private static final int ACTION_ABOUT = 2;
 
     RecyclerView recyclerView;
     MyAdapter adapter;
@@ -48,27 +41,26 @@ public class AboutActivity extends AppCompatActivity {
         adapter = new MyAdapter(items);
         recyclerView.setAdapter(adapter);
 
-        bottomNavigationView = findViewById(R.id.bottomView_about);
-        bottomNavigationView.getMenu().findItem(R.id.navigation_item2).setChecked(true);
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottomView_about);
+        bottomNavigationView.getMenu().findItem(R.id.navigation_item3).setChecked(true);
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
-            int action = getActionFromItemId(item.getItemId());
+            int action = shareData.getActionFromItemId(item.getItemId());
             switch (action) {
-                case ACTION_HOME:
+                case shareData.ACTION_HOME:
                     Intent homeIntent = new Intent(this, MainActivity.class);
                     startActivity(homeIntent);
                     finish();
                     return false;
-                case ACTION_ABOUT:
+                case shareData.ACTION_OTHER:
+                    Intent otherIntent = new Intent(this, OtherToolActivity.class);
+                    startActivity(otherIntent);
+                    finish();
+                    return false;
+                case shareData.ACTION_ABOUT:
                     return true;
                 default:
                     return false;
             }
         });
-    }
-
-    private int getActionFromItemId(int itemId) {
-        if (itemId == R.id.navigation_item1) return ACTION_HOME;
-        else if (itemId == R.id.navigation_item2) return ACTION_ABOUT;
-        return 0;
     }
 }
