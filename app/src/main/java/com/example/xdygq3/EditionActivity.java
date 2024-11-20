@@ -203,15 +203,16 @@ public class EditionActivity extends AppCompatActivity {
         TableLayout tableLayout = findViewById(R.id.TableLayout2);
         int childCount = tableLayout.getChildCount();
         int cnt = 0;
-        config.Posts = new ArrayList<Classes.Post>();
+        config.Posts = new ArrayList<>();
         for (int i = 0; i < childCount; i++) {
             View child = tableLayout.getChildAt(i);
             if (child instanceof TableRow) {
                 TableRow tableRow = (TableRow) child;
                 int rowChildCount = tableRow.getChildCount();
                 boolean available = false;
-                while (config.Posts.size() <= cnt)
+                while (config.Posts.size() <= cnt) {
                     config.Posts.add(new Classes.Post());
+                }
                 for (int j = 0; j < rowChildCount; j++) {
                     View rowChild = tableRow.getChildAt(j);
                     if (rowChild instanceof EditText) {
@@ -222,7 +223,7 @@ public class EditionActivity extends AppCompatActivity {
                             config.Posts.get(cnt).Id = id;
                             Classes.Count tmp = Counts.get(id);
                             config.Posts.get(cnt).ReplyCount = tmp != null ? tmp.ReplyCount : 0;
-                            config.Posts.get(cnt).NewCount = tmp != null ? tmp.NewCount : 0;
+                            config.Posts.get(cnt).NewCount = tmp != null ? tmp.NewCount : shareData.NewThreadFlag;
                             available = true;
                         } else if (tag.equals("mark")) {
                             config.Posts.get(cnt).Mark = editText.getText().toString();

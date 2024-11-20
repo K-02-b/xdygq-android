@@ -35,7 +35,7 @@ public class MyJobService extends JobService {
     private void scheduleJobAgain() {
         JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
         ComponentName componentName = new ComponentName(this, MyJobService.class);
-        JobInfo jobInfo = new JobInfo.Builder(337845818, componentName)
+        JobInfo jobInfo = new JobInfo.Builder(MainActivity.JobInfo_ID, componentName)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setMinimumLatency(shareData.config != null ? shareData.config.DelayTime : 10000)
                 .setBackoffCriteria(shareData.config != null ? shareData.config.DelayTime * 2 : 20000, JobInfo.BACKOFF_POLICY_LINEAR)

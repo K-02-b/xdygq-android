@@ -1,7 +1,6 @@
 package com.example.xdygq3;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -71,6 +70,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -82,6 +82,11 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
+    protected final static int JobInfo_ID = 337845818;
+    protected final static int REQUEST_CODE_NOTIFICATION_PERMISSION = 100;
+    protected final static String NotificationChannelID = "NotificationID";
+    protected final static int JUMP_PAGE_RESULT_ID = 337845818;
+    protected final static int REQUEST_CODE_PICK_COOKIE_IMAGE = 101;
     private static final int ACTION_HOME = 1;
     private static final int ACTION_ABOUT = 2;
     private static final int REQUEST_CODE_NOTIFICATIONS = 1;
@@ -143,7 +148,13 @@ public class MainActivity extends AppCompatActivity {
                             TableRow.LayoutParams.WRAP_CONTENT));
                     int[] uniqueId = new int[]{View.generateViewId(), View.generateViewId()};
                     Ids.put(item.Id, new IdPair(uniqueId[0], uniqueId[1]));
-                    Functions.addTextRow(context, tableRow, new Classes.Compat[]{new Classes.Compat(Integer.toString(item.Id)), new Classes.Compat(item.Mark), new Classes.Compat(Integer.toString(item.ReplyCount), uniqueId[0]), new Classes.Compat(Integer.toString(item.NewCount), uniqueId[1]), new Classes.Compat(item.OnlyPo ? "只看Po" : "", View.generateViewId(), shareData.config.textSize - 4)});
+                    Functions.addTextRow(context, tableRow, new Classes.Compat[]{
+                            new Classes.Compat(Integer.toString(item.Id)),
+                            new Classes.Compat(item.Mark),
+                            new Classes.Compat(String.format(Locale.getDefault(), "%d", item.ReplyCount), uniqueId[0]),
+                            new Classes.Compat(String.format(Locale.getDefault(), "%d", item.NewCount == shareData.NewThreadFlag ? 0 : item.NewCount), uniqueId[1]),
+                            new Classes.Compat(item.OnlyPo ? "只看Po" : "", View.generateViewId(), shareData.config.textSize - 4)
+                    });
                     Button button = new Button(this);
                     button.setText("已读");
                     button.setTextSize(shareData.config.textSize);
@@ -171,13 +182,21 @@ public class MainActivity extends AppCompatActivity {
         Context appContext = getApplicationContext();
         JobScheduler scheduler = (JobScheduler) appContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         ComponentName componentName = new ComponentName(appContext, MyJobService.class);
-        JobInfo jobInfo = new JobInfo.Builder(337845818, componentName)
+        JobInfo jobInfo = new JobInfo.Builder(JobInfo_ID, componentName)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setMinimumLatency(config.DelayTime)
                 .setBackoffCriteria(config.DelayTime * 2L, JobInfo.BACKOFF_POLICY_LINEAR)
                 .build();
         scheduler.schedule(jobInfo);
     };
+
+//    @RequiresApi(api = Build.VERSION_CODES.M)
+//    private void requestBatteryOptimize() {
+//        hint("请开启忽略电池优化（可选）", Toast.LENGTH_LONG);
+//        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+//        intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+//        startActivityForResult(intent, REQUEST_CODE_IGNORE_BATTERY_OPTIMIZATIONS);
+//    }
 
     private int getActionFromItemId(int itemId) {
         if (itemId == R.id.navigation_item1) return ACTION_HOME;
@@ -201,8 +220,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-    protected final static int REQUEST_CODE_NOTIFICATION_PERMISSION = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -266,11 +283,6 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MainActivity", "EventBus 注册错误", e);
         }
         try {
-            hasLED = NotificationManagerCompat.from(context).areNotificationsEnabled();
-        } catch (Exception e) {
-            Log.e("MainActivity", "LED 状态获取错误", e);
-        }
-        try {
             if (notificationManager == null) {
                 notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             }
@@ -292,14 +304,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    @RequiresApi(api = Build.VERSION_CODES.M)
-//    private void requestBatteryOptimize() {
-//        hint("请开启忽略电池优化（可选）", Toast.LENGTH_LONG);
-//        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-//        intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
-//        startActivityForResult(intent, REQUEST_CODE_IGNORE_BATTERY_OPTIMIZATIONS);
-//    }
-
     boolean isBatteryOptimizeStatus() {
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         return powerManager.isIgnoringBatteryOptimizations(this.getPackageName());
@@ -318,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != RESULT_OK) return;
-        if (requestCode == 337845818) {
+        if (requestCode == JUMP_PAGE_RESULT_ID) {
             if (thread.isAlive())
                 thread.interrupt();
             thread = new Thread(task);
@@ -374,40 +378,62 @@ public class MainActivity extends AppCompatActivity {
         return "";
     }
 
-    boolean hasLED = false;
-
     public void sendNotification(Context context, int id, String title, String content) {
-        CharSequence name = "新消息通知";
-        String description = "当有新消息时通知";
-        int importance = NotificationManager.IMPORTANCE_HIGH;
-        NotificationChannel channel = new NotificationChannel("my_channel_id", name, importance);
-        channel.setDescription(description);
-        if (hasLED) {
-            channel.enableLights(true);
-            channel.setLightColor(Color.BLUE);
+        try {
+            if (notificationManager == null) {
+                notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            }
+        } catch (Exception e) {
+            Log.e("MainActivity", "通知管理器错误", e);
+            return;
         }
-        notificationManager.createNotificationChannel(channel);
-        Intent resultIntent = new Intent(this, MainActivity.class);
-        resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        resultIntent.setAction("NOTIFICATION_CLICKED");
-        resultIntent.putExtra("id", Integer.toString(id));
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, id, resultIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "my_channel_id");
-        builder.setSmallIcon(R.drawable.notification_icon)
-                .setContentTitle(title)
-                .setContentText(content)
-                .setAutoCancel(true)
-                .setWhen(System.currentTimeMillis())
-                .setDefaults(Notification.DEFAULT_ALL)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setContentIntent(resultPendingIntent)
-                .setColor(Color.BLUE);
-        if (hasLED) {
-            builder.setLights(Color.BLUE, 1000, 0);
+        NotificationChannel channel;
+        try {
+            channel = notificationManager.getNotificationChannel(NotificationChannelID);
+        } catch (Exception e) {
+            Log.e("MainActivity", "获取通知频道错误", e);
+            return;
         }
-        Notification notification = builder.build();
-        notificationManager.notify(id, notification);
+        try {
+            if (channel == null) {
+                CharSequence name = "新消息通知";
+                String description = "当有新消息时通知";
+                int importance = NotificationManager.IMPORTANCE_HIGH;
+                channel = new NotificationChannel(NotificationChannelID, name, importance);
+                channel.setDescription(description);
+                channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                channel.enableLights(true);
+                notificationManager.createNotificationChannel(channel);
+            }
+        } catch (Exception e) {
+            Log.e("MainActivity", "创建通知频道错误", e);
+            return;
+        }
+        try {
+            Intent resultIntent = new Intent(this, MainActivity.class);
+            resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            resultIntent.setAction("NOTIFICATION_CLICKED");
+            resultIntent.putExtra("id", Integer.toString(id));
+            PendingIntent resultPendingIntent = PendingIntent.getActivity(this, id, resultIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, NotificationChannelID);
+            builder.setSmallIcon(R.drawable.notification_icon)
+                    .setContentTitle(title)
+                    .setContentText(content)
+                    .setAutoCancel(true)
+                    .setWhen(System.currentTimeMillis())
+                    .setDefaults(Notification.DEFAULT_ALL)
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setContentIntent(resultPendingIntent)
+                    .setColor(Color.BLUE);
+            if (channel.shouldShowLights()) {
+                builder.setLights(Color.BLUE, 1000, 0);
+            }
+            Notification notification = builder.build();
+            notificationManager.notify(id, notification);
+        } catch (Exception e) {
+            Log.e("MainActivity", "发送通知错误", e);
+        }
     }
 
     @Override
@@ -426,7 +452,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             new Thread(this::fetchAndProcessPosts).start();
         } catch (Exception e) {
-            Log.e("MainActivity", "线程启动错误", e);
+            Log.e("MainActivity", "更新线程启动错误", e);
         }
     }
 
@@ -439,6 +465,8 @@ public class MainActivity extends AppCompatActivity {
             }
         } catch (InterruptedException e) {
             Log.e("MainActivity", "线程运行错误", e);
+        } catch (Exception e) {
+            Log.e("MainActivity", "线程运行未知错误", e);
         } finally {
             saveCount();
         }
@@ -478,32 +506,41 @@ public class MainActivity extends AppCompatActivity {
         try {
             int newReplyCount = new Gson().fromJson(responseBody, JsonObject.class).getAsJsonObject().get("ReplyCount").getAsInt();
             Classes.Count tmp = Counts.get(post.Id);
-            tmp = new Classes.Count(
-                    newReplyCount == 0 ? (tmp != null ? tmp.ReplyCount : 0) : newReplyCount,
-                    (tmp != null ? tmp.NewCount : 0) + newReplyCount - (tmp != null ? tmp.ReplyCount : 0),
-                    tmp != null ? tmp.latest : 0
-            );
-            boolean shouldUpdate = tmp.NewCount != tmp.latest;
-            tmp.latest = tmp.NewCount;
-            Counts.put(post.Id, tmp);
-
-            Classes.Count finalTmp = tmp;
-            runOnUiThread(() -> updateUI(post, finalTmp, shouldUpdate));
+            if (tmp == null) {
+                tmp = new Classes.Count(0, 0, 0);
+            }
+            if (tmp.NewCount == shareData.NewThreadFlag) {
+                tmp = new Classes.Count(newReplyCount, 0, 0);
+                Counts.put(post.Id, tmp);
+                Classes.Count finalTmp = tmp;
+                runOnUiThread(() -> updateUI(post, finalTmp, false));
+            } else {
+                tmp = new Classes.Count(
+                        newReplyCount == 0 ? tmp.ReplyCount : newReplyCount,
+                        tmp.NewCount + newReplyCount - tmp.ReplyCount,
+                        tmp.latest
+                );
+                boolean shouldUpdate = tmp.NewCount != tmp.latest;
+                tmp.latest = tmp.NewCount;
+                Counts.put(post.Id, tmp);
+                Classes.Count finalTmp = tmp;
+                runOnUiThread(() -> updateUI(post, finalTmp, shouldUpdate));
+            }
         } catch (Exception e) {
             Log.e("MainActivity", "响应错误", e);
         }
     }
 
-    @SuppressLint("SetTextI18n")
     private void updateUI(Classes.Post post, Classes.Count count, boolean shouldUpdate) {
         IdPair ip = Ids.get(post.Id);
         TextView newReplyTextView = findViewById(ip != null ? ip.first : 0);
-        newReplyTextView.setText(Integer.toString(count.ReplyCount));
-
+//        newReplyTextView.setText(Integer.toString(count.ReplyCount));
+        newReplyTextView.setText(String.format(Locale.getDefault(), "%d", count.ReplyCount));
         if (shouldUpdate) {
             sendNotification(context, post.Id, post.Mark, "共有" + count.NewCount + "条新消息");
             TextView newCountTextView = findViewById(ip != null ? ip.second : 0);
-            newCountTextView.setText(Integer.toString(count.NewCount));
+//            newCountTextView.setText(Integer.toString(count.NewCount));
+            newCountTextView.setText(String.format(Locale.getDefault(), "%d", count.NewCount));
             published.put(post.Id, true);
         }
     }
@@ -520,8 +557,9 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             TextView newReplyTextView = findViewById(CompatId);
             newReplyTextView.setText("0");
-            if (Boolean.TRUE.equals(published.get(PostId)))
+            if (Boolean.TRUE.equals(published.get(PostId))) {
                 notificationManager.cancel(PostId);
+            }
         });
         Counts.compute(PostId, (k, count) -> new Classes.Count(count != null ? count.ReplyCount : 0, 0));
         saveCount();
@@ -550,18 +588,20 @@ public class MainActivity extends AppCompatActivity {
         int textSize = shareData.config.textSize;
         switch (item.getItemId()) {
             case 0:
-                if (thread.isAlive())
+                if (thread.isAlive()) {
                     thread.interrupt();
+                }
                 saveCount();
                 Intent editIntent = new Intent(this, EditionActivity.class);
-                startActivityForResult(editIntent, 337845818);
+                startActivityForResult(editIntent, JUMP_PAGE_RESULT_ID);
                 break;
             case 1:
-                if (thread.isAlive())
+                if (thread.isAlive()) {
                     thread.interrupt();
+                }
                 saveCount();
                 Intent settingIntent = new Intent(this, SettingsActivity.class);
-                startActivityForResult(settingIntent, 337845818);
+                startActivityForResult(settingIntent, JUMP_PAGE_RESULT_ID);
                 break;
             case 2:
                 saveCount();
@@ -654,8 +694,6 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    protected final static int REQUEST_CODE_PICK_COOKIE_IMAGE = 101;
-
     protected void importCookie() {
         Intent intent;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -671,8 +709,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        if (thread.isAlive())
+        if (thread.isAlive()) {
             thread.interrupt();
+        }
         saveCount();
         EventBus.getDefault().unregister(this);
         super.onDestroy();
