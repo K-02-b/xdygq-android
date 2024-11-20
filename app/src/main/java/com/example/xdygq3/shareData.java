@@ -14,4 +14,10 @@ public class shareData {
         else if (itemId == R.id.navigation_item3) return ACTION_ABOUT;
         return 0;
     }
+    public static Classes.SettingsData getConfig() {
+        if(config == null) {
+            config = new Classes.SettingsData();
+        }
+        return config;
+    }
 }

@@ -17,7 +17,7 @@ public class Classes {
     public static class SettingsData {
         public String UserHash = "";
         public List<Post> Posts;
-        public int DelayTime = 20000;
+        public int DelayTime = 30000;
         public int InnerDelayTime = 1000;
         public int textSize = 15;
         public boolean submitToServer = false;

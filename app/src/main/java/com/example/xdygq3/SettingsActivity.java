@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    public Classes.SettingsData config = shareData.config;
+    public Classes.SettingsData config = shareData.getConfig();
 
     private RecyclerView recyclerView = null;
 

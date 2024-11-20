@@ -150,11 +150,11 @@ public class MainActivity extends AppCompatActivity {
                             new Classes.Compat(item.Mark),
                             new Classes.Compat(String.format(Locale.getDefault(), "%d", item.ReplyCount), uniqueId[0]),
                             new Classes.Compat(String.format(Locale.getDefault(), "%d", item.NewCount == shareData.NewThreadFlag ? 0 : item.NewCount), uniqueId[1]),
-                            new Classes.Compat(item.OnlyPo ? "只看Po" : "", View.generateViewId(), shareData.config.textSize - 4)
+                            new Classes.Compat(item.OnlyPo ? "只看Po" : "", View.generateViewId(), shareData.getConfig().textSize - 4)
                     });
                     Button button = new Button(this);
                     button.setText("已读");
-                    button.setTextSize(shareData.config.textSize);
+                    button.setTextSize(shareData.getConfig().textSize);
                     button.setLayoutParams(new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                     button.setOnClickListener(v -> hasRead(item.Id, uniqueId[1]));
                     tableRow.addView(button);
@@ -163,8 +163,8 @@ public class MainActivity extends AppCompatActivity {
             } catch (NullPointerException e) {
                 if (shareData.config == null) config = new Classes.SettingsData();
                 if (shareData.config.Posts == null) shareData.config.Posts = new ArrayList<>();
-                if (config == null) config = shareData.config;
-                if (config.Posts == null) config.Posts = shareData.config.Posts;
+                if (config == null) config = shareData.getConfig();
+                if (config.Posts == null) config.Posts = shareData.getConfig().Posts;
             } catch (IndexOutOfBoundsException e) {
                 Log.e("MainActivity", "索引越界", e);
             } catch (Exception e) {
@@ -581,7 +581,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         AlertDialog dialog = null;
-        int textSize = shareData.config.textSize;
+        int textSize = shareData.getConfig().textSize;
         switch (item.getItemId()) {
             case 0:
                 if (thread.isAlive()) {

@@ -45,7 +45,7 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactV
         });
         holder.avatar.setImageResource(contact.getAvatar());
         holder.name.setText(contact.getName());
-        holder.name.setTextSize(shareData.config.textSize + 4);
+        holder.name.setTextSize(shareData.getConfig().textSize + 4);
     }
 
     @Override

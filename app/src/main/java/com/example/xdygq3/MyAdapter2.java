@@ -83,7 +83,7 @@ public class MyAdapter2 extends RecyclerView.Adapter<MyAdapter2.MyViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-        int textSize = shareData.config.textSize;
+        int textSize = shareData.getConfig().textSize;
         holder.textView.setTextSize(textSize);
         holder.editText.setTextSize(textSize);
         tuple tmp = data.get(position);
