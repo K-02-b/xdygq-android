@@ -59,6 +59,20 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".ShowThread"
+            android:exported="true">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ShowAThread"
+            android:exported="true">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".AboutActivity"
             android:exported="false">
             <intent-filter>

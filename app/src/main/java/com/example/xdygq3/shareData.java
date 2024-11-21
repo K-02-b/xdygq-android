@@ -1,5 +1,13 @@
 package com.example.xdygq3;
 
+import android.util.Log;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import java.security.cert.X509Certificate;
+
 public class shareData {
     public static final int ACTION_HOME = 1;
     public static final int ACTION_OTHER = 2;
@@ -19,5 +27,30 @@ public class shareData {
             config = new Classes.SettingsData();
         }
         return config;
+    }
+    static X509TrustManager trustAllCerts = new X509TrustManager() {
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) {}
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return new X509Certificate[0];
+        }
+    };
+    static HostnameVerifier hostnameVerifier = (hostname, session) -> true;
+    static SSLContext sslContext = null;
+    static SSLContext getSSLContext() {
+        if(sslContext == null) {
+            try {
+                sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(null, new TrustManager[]{trustAllCerts}, new java.security.SecureRandom());
+            } catch (Exception e) {
+                Log.e("SSLContext", "getSSLContext", e);
+            }
+        }
+        return sslContext;
     }
 }

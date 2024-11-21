@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactViewHolder> {
 
@@ -36,14 +37,21 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactV
     public void onBindViewHolder(@NonNull ContactViewHolder holder, int position) {
         Contact contact = contactList.get(position);
         holder.linearLayout.setOnClickListener(item->{
+            if(!Objects.equals(contact.getTag(), "")) {
+                Functions.PutFile(contact.getContext(), "currentTag.txt", contact.getTag());
+            }
             Context context = contact.getContext();
             Class<? extends Activity> page = contact.getPage();
             if(context != null && page != null) {
                 Intent intent = new Intent(context, page);
                 context.startActivity(intent);
+            } else if(context != null) {
+                Toast.makeText(context, "敬请期待", Toast.LENGTH_SHORT).show();
             }
         });
-        holder.avatar.setImageResource(contact.getAvatar());
+        if(contact.getAvatar() != null) {
+            holder.avatar.setImageResource(contact.getAvatar());
+        }
         holder.name.setText(contact.getName());
         holder.name.setTextSize(shareData.getConfig().textSize + 4);
     }

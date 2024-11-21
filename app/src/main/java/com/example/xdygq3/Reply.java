@@ -1,12 +1,20 @@
 package com.example.xdygq3;
 
+import android.text.Spanned;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
 public class Reply {
-    private String title;
-    private String name;
-    private String cookie;
-    private String content;
-    private String timestamp;
-    private String id;
+    private final String title;
+    private final String name;
+    private final String cookie;
+    private final String content;
+    private final String timestamp;
+    private final String id;
 
     public Reply(String title, String name, String cookie, String content, String timestamp, String id) {
         this.title = title;
@@ -39,5 +47,14 @@ public class Reply {
 
     public String getId() {
         return id;
+    }
+
+    @NonNull
+    public String toString() {
+        return new Gson().toJson(this);
+    }
+
+    public JsonObject toJsonObject() {
+        return new Gson().fromJson(toString(), JsonObject.class);
     }
 }

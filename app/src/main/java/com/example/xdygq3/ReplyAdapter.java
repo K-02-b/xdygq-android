@@ -1,5 +1,6 @@
 package com.example.xdygq3;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +27,17 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
     public void onBindViewHolder(@NonNull ReplyViewHolder holder, int position) {
         Reply reply = replies.get(position);
         holder.bind(reply);
+    }
+
+    public void add(Reply newData) {
+        int position = replies.size();
+        this.replies.add(newData);
+        notifyItemInserted(position);
+    }
+
+    public void clearAll() {
+        replies.clear();
+        notifyDataSetChanged();
     }
 
     @Override

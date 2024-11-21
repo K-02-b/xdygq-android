@@ -471,7 +471,9 @@ public class MainActivity extends AppCompatActivity {
     private void fetchPostData(Classes.Post post) throws InterruptedException {
         String api = post.OnlyPo ? "https://api.nmb.best/api/po/page/337845818/id/" : "https://api.nmb.best/api/thread/page/337845818/id/";
         String url = api + post.Id;
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = new OkHttpClient.Builder()
+                .sslSocketFactory(shareData.getSSLContext().getSocketFactory(), shareData.trustAllCerts)
+                .build();
         Request request = new Request.Builder()
                 .url(url)
                 .header("Cookie", "userhash=" + UserHash)

@@ -5,19 +5,29 @@ import android.app.Activity;
 import android.content.Context;
 
 public class Contact {
-    private final int avatar;
+    private final Integer avatar;
     private final String name;
     private final Context context;
     private final Class<? extends Activity> page;
+    private final String tag;
 
-    public Contact(int avatar, String name, Context context, Class<? extends Activity> page) {
+    public Contact(Integer avatar, String name, Context context, Class<? extends Activity> page) {
         this.avatar = avatar;
         this.name = name;
         this.context = context;
         this.page = page;
+        this.tag = "";
     }
 
-    public int getAvatar() {
+    public Contact(Integer avatar, String name, Context context, Class<? extends Activity> page, String tag) {
+        this.avatar = avatar;
+        this.name = name;
+        this.context = context;
+        this.page = page;
+        this.tag = tag;
+    }
+
+    public Integer getAvatar() {
         return avatar;
     }
 
@@ -31,5 +41,9 @@ public class Contact {
 
     public Context getContext() {
         return context;
+    }
+
+    public String getTag() {
+        return tag;
     }
 }

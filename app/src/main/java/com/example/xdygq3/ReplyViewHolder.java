@@ -1,5 +1,6 @@
 package com.example.xdygq3;
 
+import android.text.Html;
 import android.view.View;
 import android.widget.TextView;
 
@@ -30,7 +31,7 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
         nameView.setTextSize(shareData.getConfig().textSize);
         cookieView.setText(reply.getCookie());
         cookieView.setTextSize(shareData.getConfig().textSize);
-        contentView.setText(reply.getContent());
+        contentView.setText(Html.fromHtml(reply.getContent(), Html.FROM_HTML_MODE_COMPACT));
         contentView.setTextSize(shareData.getConfig().textSize);
         timestampView.setText(reply.getTimestamp());
         timestampView.setTextSize(shareData.getConfig().textSize);
