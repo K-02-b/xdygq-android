@@ -1,6 +1,10 @@
 package com.example.xdygq3;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.text.Html;
+import android.text.Spanned;
 import android.view.View;
 import android.widget.TextView;
 
@@ -13,6 +17,7 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
     private TextView contentView;
     private TextView timestampView;
     private TextView idView;
+    private ClipboardManager clipboardManager;
 
     public ReplyViewHolder(View itemView) {
         super(itemView);
@@ -22,6 +27,7 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
         contentView = itemView.findViewById(R.id.content_unit);
         timestampView = itemView.findViewById(R.id.timestamp_unit);
         idView = itemView.findViewById(R.id.id_unit);
+        clipboardManager = (ClipboardManager) itemView.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
     }
 
     public void bind(Reply reply) {
@@ -29,10 +35,24 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
         titleView.setTextSize(shareData.getConfig().textSize);
         nameView.setText(reply.getName());
         nameView.setTextSize(shareData.getConfig().textSize);
-        cookieView.setText(reply.getCookie());
+        final String cookie = reply.getContent();
+        cookieView.setText(cookie);
         cookieView.setTextSize(shareData.getConfig().textSize);
-        contentView.setText(Html.fromHtml(reply.getContent(), Html.FROM_HTML_MODE_COMPACT));
+        cookieView.setOnLongClickListener(v -> {
+            ClipData clip = ClipData.newPlainText("content", cookie);
+            clipboardManager.setPrimaryClip(clip);
+            return true;
+        });
+        final String content = reply.getContent();
+        contentView.setText(Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT));
         contentView.setTextSize(shareData.getConfig().textSize);
+        contentView.setOnLongClickListener(v -> {
+            Spanned spannedContent = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT);
+            String plainTextContent = spannedContent.toString();
+            ClipData clip = ClipData.newPlainText("content", plainTextContent);
+            clipboardManager.setPrimaryClip(clip);
+            return true;
+        });
         timestampView.setText(reply.getTimestamp());
         timestampView.setTextSize(shareData.getConfig().textSize);
         idView.setText(reply.getId());
