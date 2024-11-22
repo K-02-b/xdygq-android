@@ -55,10 +55,12 @@
             <ImageButton
                 android:layout_width="50dp"
                 android:layout_height="50dp"
+                android:src="@drawable/up_arrow"
                 android:layout_marginHorizontal="15dp"
                 android:id="@+id/search_button_up" />
             <ImageButton
                 android:layout_width="50dp"
+                android:src="@drawable/down_arrow"
                 android:layout_height="50dp"
                 android:layout_marginHorizontal="15dp"
                 android:id="@+id/search_button_down" />
