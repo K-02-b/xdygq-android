@@ -28,6 +28,7 @@ public class Classes {
         public int ReplyCount;
         public int NewCount;
         public int latest;
+
         public Count(int _r, int _n) {
             ReplyCount = _r;
             NewCount = _n;
@@ -53,24 +54,28 @@ public class Classes {
             tag = "";
             textSize = shareData.config != null ? shareData.config.textSize : 15;
         }
+
         public Compat(String _c, int _i) {
             content = _c;
             id = _i;
             tag = "";
             textSize = shareData.config != null ? shareData.config.textSize : 15;
         }
+
         public Compat(String _c, int _i, String _t) {
             content = _c;
             id = _i;
             tag = _t;
             textSize = shareData.config != null ? shareData.config.textSize : 15;
         }
+
         public Compat(String _c, int _i, int _s) {
             content = _c;
             id = _i;
             tag = "";
             textSize = _s;
         }
+
         public Compat(String _c, int _i, String _t, int _s) {
             content = _c;
             id = _i;

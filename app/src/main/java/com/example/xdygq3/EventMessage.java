@@ -13,7 +13,7 @@ public class EventMessage {
     @Override
     public String toString() {
 
-        return "type="+type+"--message= "+message;
+        return "type=" + type + "--message= " + message;
     }
 
     public int getType() {

@@ -8,4 +8,6 @@
     <string name="String_mark">备注</string>
     <string name="String_thread">串号</string>
     <string name="PleaseInputThreadNumber">请输入串号：</string>
+    <string name="result_count_format">%d / %d</string>
+
 </resources>

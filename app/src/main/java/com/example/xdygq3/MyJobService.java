@@ -15,23 +15,29 @@ public class MyJobService extends JobService {
         super.onCreate();
         EventBus.getDefault().register(this);
     }
+
     @Override
     public boolean onStartJob(JobParameters params) {
-        EventBus.getDefault().post(new EventMessage(1,"UPDATE"));
+        EventBus.getDefault().post(new EventMessage(1, "UPDATE"));
         scheduleJobAgain();
         return false;
     }
+
     @Override
     public boolean onStopJob(JobParameters params) {
         return true;
     }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
     }
+
     @Subscribe
-    public void onEvent(EventMessage event) {}
+    public void onEvent(EventMessage event) {
+    }
+
     private void scheduleJobAgain() {
         JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
         ComponentName componentName = new ComponentName(this, MyJobService.class);

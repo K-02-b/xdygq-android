@@ -36,20 +36,20 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactV
     @Override
     public void onBindViewHolder(@NonNull ContactViewHolder holder, int position) {
         Contact contact = contactList.get(position);
-        holder.linearLayout.setOnClickListener(item->{
-            if(!Objects.equals(contact.getTag(), "")) {
+        holder.linearLayout.setOnClickListener(item -> {
+            if (!Objects.equals(contact.getTag(), "")) {
                 Functions.PutFile(contact.getContext(), "currentTag.txt", contact.getTag());
             }
             Context context = contact.getContext();
             Class<? extends Activity> page = contact.getPage();
-            if(context != null && page != null) {
+            if (context != null && page != null) {
                 Intent intent = new Intent(context, page);
                 context.startActivity(intent);
-            } else if(context != null) {
+            } else if (context != null) {
                 Toast.makeText(context, "敬请期待", Toast.LENGTH_SHORT).show();
             }
         });
-        if(contact.getAvatar() != null) {
+        if (contact.getAvatar() != null) {
             holder.avatar.setImageResource(contact.getAvatar());
         }
         holder.name.setText(contact.getName());

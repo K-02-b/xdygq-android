@@ -30,7 +30,6 @@ public class OtherToolActivity extends AppCompatActivity {
 
         List<Contact> contactList = new ArrayList<>();
         contactList.add(new Contact(R.drawable.ic_avatar, "缓存串至本地", this, SaveThread.class));
-        contactList.add(new Contact(R.drawable.ic_avatar, "查看缓存至本地的串", this, ShowThread.class));
         contactList.add(new Contact(R.drawable.ic_avatar, "以时间排序查看板块", this, null));
         contactList.add(new Contact(R.drawable.ic_avatar, "敬请期待", this, null));
 

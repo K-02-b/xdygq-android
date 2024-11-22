@@ -1,8 +1,5 @@
 package com.example.xdygq3;
 
-import android.text.Spanned;
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 
 import com.google.gson.Gson;
