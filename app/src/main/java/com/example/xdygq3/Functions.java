@@ -75,6 +75,23 @@ public class Functions {
         }
     }
 
+    public static void deleteFile(Context context, String filename) {
+        try {
+            File file = new File(context.getFilesDir(), filename);
+            if (file.exists()) {
+                if (file.delete()) {
+                    Log.i("deleteFile", "Deleted file: " + filename);
+                } else {
+                    Log.e("deleteFile", "Failed to delete file: " + filename);
+                }
+            } else {
+                Log.w("deleteFile", "File does not exist: " + filename);
+            }
+        } catch (Exception e) {
+            Log.e("deleteFile", "Error deleting file: " + filename, e);
+        }
+    }
+
     public static Boolean checkFileExists(Context context, String filename) {
         File file = new File(context.getFilesDir(), filename);
         try (FileInputStream fis = new FileInputStream(file);
@@ -88,7 +105,7 @@ public class Functions {
             return false;
         } catch (IOException e) {
             Log.e("checkFileExists", "Error reading file: " + filename, e);
-            return null;
+            return false;
         }
     }
 

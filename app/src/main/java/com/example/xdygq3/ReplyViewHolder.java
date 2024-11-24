@@ -6,56 +6,93 @@ import android.content.Context;
 import android.text.Html;
 import android.text.Spanned;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.recyclerview.widget.RecyclerView;
 
 public class ReplyViewHolder extends RecyclerView.ViewHolder {
-    private TextView titleView;
-    private TextView nameView;
-    private TextView cookieView;
-    private TextView contentView;
-    private TextView timestampView;
-    private TextView idView;
-    private ClipboardManager clipboardManager;
+    private final TextView titleView;
+    private final TextView nameView;
+    private final ImageView ifPo;
+    private final TextView cookieView;
+    private final TextView contentView;
+    private final TextView timestampView;
+    private final TextView idView;
+    private final Context context;
+    private final ClipboardManager clipboardManager;
+    private final int textSize = shareData.getConfig().textSize;
 
     public ReplyViewHolder(View itemView) {
         super(itemView);
         titleView = itemView.findViewById(R.id.title_unit);
         nameView = itemView.findViewById(R.id.name_unit);
+        ifPo = itemView.findViewById(R.id.if_po);
         cookieView = itemView.findViewById(R.id.cookie_unit);
         contentView = itemView.findViewById(R.id.content_unit);
         timestampView = itemView.findViewById(R.id.timestamp_unit);
         idView = itemView.findViewById(R.id.id_unit);
+        context = itemView.getContext();
         clipboardManager = (ClipboardManager) itemView.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
     }
 
     public void bind(Reply reply) {
-        titleView.setText(reply.getTitle());
-        titleView.setTextSize(shareData.getConfig().textSize);
-        nameView.setText(reply.getName());
-        nameView.setTextSize(shareData.getConfig().textSize);
-        final String cookie = reply.getContent();
+        final String title = reply.getTitle();
+        titleView.setText(title);
+        titleView.setTextSize(textSize);
+        titleView.setOnLongClickListener(v -> {
+            copy(title, "标题");
+            return true;
+        });
+        final String name = reply.getName();
+        nameView.setText(name);
+        nameView.setTextSize(textSize);
+        nameView.setOnLongClickListener(v -> {
+            copy(name, "名称");
+            return true;
+        });
+        if (reply.is_po()) {
+            ifPo.setVisibility(View.VISIBLE);
+        }
+        final String cookie = reply.getCookie();
         cookieView.setText(cookie);
-        cookieView.setTextSize(shareData.getConfig().textSize);
+        cookieView.setTextSize(textSize);
         cookieView.setOnLongClickListener(v -> {
-            ClipData clip = ClipData.newPlainText("content", cookie);
-            clipboardManager.setPrimaryClip(clip);
+            copy(cookie, "饼干");
             return true;
         });
         final String content = reply.getContent();
-        contentView.setText(Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT));
-        contentView.setTextSize(shareData.getConfig().textSize);
+        final Spanned spannedContent = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT);
+        contentView.setText(spannedContent);
+        contentView.setTextSize(textSize);
         contentView.setOnLongClickListener(v -> {
-            Spanned spannedContent = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT);
-            String plainTextContent = spannedContent.toString();
-            ClipData clip = ClipData.newPlainText("content", plainTextContent);
-            clipboardManager.setPrimaryClip(clip);
+            copy(spannedContent.toString(), "内容");
             return true;
         });
-        timestampView.setText(reply.getTimestamp());
-        timestampView.setTextSize(shareData.getConfig().textSize);
-        idView.setText(reply.getId());
-        idView.setTextSize(shareData.getConfig().textSize);
+        final String timestamp = reply.getTimestamp();
+        timestampView.setText(timestamp);
+        timestampView.setTextSize(textSize);
+        timestampView.setOnLongClickListener(v -> {
+            copy(timestamp, "时间");
+            return true;
+        });
+        final String Id = reply.getId();
+        idView.setText(Id);
+        idView.setTextSize(textSize);
+        idView.setOnLongClickListener(v -> {
+            copy(Id, "串号");
+            return true;
+        });
+    }
+
+    private void copy(String text) {
+        copy(text, "已复制到剪贴板");
+    }
+
+    private void copy(String text, String title) {
+        ClipData clip = ClipData.newPlainText("content", text);
+        clipboardManager.setPrimaryClip(clip);
+        Toast.makeText(context, title + "已复制到剪贴板", Toast.LENGTH_SHORT).show();
     }
 }

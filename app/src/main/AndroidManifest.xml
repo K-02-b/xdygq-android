@@ -39,6 +39,7 @@
         </activity>
         <activity
             android:name=".EditionActivity"
+            android:launchMode="singleTask"
             android:exported="false">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
@@ -46,6 +47,7 @@
         </activity>
         <activity
             android:name=".OtherToolActivity"
+            android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
@@ -53,6 +55,7 @@
         </activity>
         <activity
             android:name=".SaveThread"
+            android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
@@ -60,6 +63,7 @@
         </activity>
         <activity
             android:name=".ShowThread"
+            android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
@@ -67,6 +71,7 @@
         </activity>
         <activity
             android:name=".ShowAThread"
+            android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
@@ -74,6 +79,7 @@
         </activity>
         <activity
             android:name=".AboutActivity"
+            android:launchMode="singleTask"
             android:exported="false">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
@@ -81,6 +87,7 @@
         </activity>
         <activity
             android:name=".SettingsActivity"
+            android:launchMode="singleTask"
             android:exported="false">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />

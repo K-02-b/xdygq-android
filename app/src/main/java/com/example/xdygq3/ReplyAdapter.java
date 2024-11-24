@@ -50,4 +50,17 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
     public int getItemCount() {
         return replies.size();
     }
+
+    public void wrap(String word) {
+        if (!word.isEmpty()) {
+            for (int i = 0; i < replies.size(); i++) {
+                String content = replies.get(i).getContent();
+                if (content.contains(word)) {
+                    content = content.replace(word, "<b><font style=\"background-color: #ADD8E6\">" + word + "</font></b>");
+                    replies.get(i).setContent(content);
+                    notifyItemChanged(i);
+                }
+            }
+        }
+    }
 }

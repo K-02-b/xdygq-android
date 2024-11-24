@@ -717,10 +717,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onMessageEvent(EventMessage message) {
-        try {
-            update();
-        } catch (Exception e) {
-            Log.e("MainActivity", "更新错误", e);
+        if (Objects.equals(message.getMessage(), "UPDATE")) {
+            try {
+                update();
+            } catch (Exception e) {
+                Log.e("MainActivity", "更新错误", e);
+            }
         }
     }
 

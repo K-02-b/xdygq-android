@@ -20,6 +20,7 @@ public class MyAdapter2 extends RecyclerView.Adapter<MyAdapter2.MyViewHolder> {
 
     private List<tuple> data;
     private Context context;
+
     public MyAdapter2(Context context, List<tuple> data) {
         this.context = context;
         this.data = data;

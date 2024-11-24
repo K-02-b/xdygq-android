@@ -55,6 +55,7 @@ public class SaveThread extends AppCompatActivity {
     private int totalPage = 0;
     private int savedPage = -1;
     private boolean giveUp = false;
+    private String poCookie = null;
     private Classes.Post Post = null;
     private String filePath = null;
     /**
@@ -147,7 +148,7 @@ public class SaveThread extends AppCompatActivity {
             }
             if (this.savedPage != -1) {
                 ArrayList<Reply> replies = readAndMergeReplies(Post.Id);
-                for(Reply reply: replies) {
+                for (Reply reply : replies) {
                     map2.put(reply.getId(), true);
                 }
                 runOnUiThread(() -> adapter.setReplies(replies));
@@ -168,20 +169,20 @@ public class SaveThread extends AppCompatActivity {
     private void processReplies() {
         for (int i = savedPage == -1 ? 0 : savedPage; i <= totalPage; i++) {
             if (!waitForData(i)) {
-                runOnUiThread(() -> Toast.makeText(this, "发生错误，缓存进程已强制结束", Toast.LENGTH_LONG).show());
+                runOnUiThread(() -> Toast.makeText(this, "发生错误，进程已强制结束", Toast.LENGTH_LONG).show());
                 return;
             }
             ArrayList<Reply> array = map.get(i);
             assert array != null;
-            if(i > savedPage) {
+            if (i > savedPage) {
                 for (Reply reply : array) {
-                    if(!map2.containsKey(reply.getId())) {
+                    if (!map2.containsKey(reply.getId())) {
                         replies.add(reply.toJsonObject());
                         runOnUiThread(() -> adapter.add(reply));
                     }
                 }
             }
-            if(i != 0 && i % 10 == 0) {
+            if (i != 0 && i % 10 == 0) {
                 saveRepliesToFile(i);
                 updateSavedThreadsList(i);
                 replies = new JsonArray();
@@ -206,10 +207,12 @@ public class SaveThread extends AppCompatActivity {
                         JsonObject jsonObject = jsonElement.getAsJsonObject();
                         int id = jsonObject.get("id").getAsInt();
                         if (!uniqueReplies.containsKey(id)) {
+                            String cookie = jsonObject.get("cookie").getAsString();
                             uniqueReplies.put(id, new Reply(
                                     jsonObject.get("title").getAsString(),
                                     jsonObject.get("name").getAsString(),
-                                    jsonObject.get("cookie").getAsString(),
+                                    cookie,
+                                    Objects.equals(cookie, poCookie),
                                     jsonObject.get("content").getAsString(),
                                     jsonObject.get("timestamp").getAsString(),
                                     jsonObject.get("id").getAsString()
@@ -234,7 +237,7 @@ public class SaveThread extends AppCompatActivity {
     private boolean waitForData(int page) {
         int cnt = 0;
         while (map.get(page) == null && cnt <= MAX_RETRIES) {
-            if(giveUp) {
+            if (giveUp) {
                 return false;
             }
             try {
@@ -257,6 +260,7 @@ public class SaveThread extends AppCompatActivity {
             runOnUiThread(() -> Toast.makeText(this, "保存全串失败", Toast.LENGTH_SHORT).show());
         }
     }
+
     private void saveRepliesToFile(int i) {
         try {
             String jsonString = new Gson().toJson(replies);
@@ -281,6 +285,7 @@ public class SaveThread extends AppCompatActivity {
     private void updateSavedThreadsList() {
         updateSavedThreadsList(totalPage - 1);
     }
+
     private void updateSavedThreadsList(int i) {
         try {
             String savedThreads = Functions.getFile(this, SAVED_THREADS_FILE);
@@ -381,10 +386,10 @@ public class SaveThread extends AppCompatActivity {
         try {
             map3.putIfAbsent(i, 0);
             //noinspection DataFlowIssue
-            if(map3.get(i) >= MAX_RETRIES) {
+            if (map3.get(i) >= MAX_RETRIES) {
                 runOnUiThread(() -> Toast.makeText(this, "第" + i + "页重试次数过多，放弃", Toast.LENGTH_SHORT).show());
                 giveUp = true;
-                return ;
+                return;
             }
             //noinspection DataFlowIssue
             map3.put(i, map3.get(i) + 1);
@@ -415,9 +420,9 @@ public class SaveThread extends AppCompatActivity {
             JsonObject jsonObject = new Gson().fromJson(responseBody, JsonObject.class).getAsJsonObject();
             ArrayList<Reply> array1 = parseReplies(i, jsonObject);
             map.put(i, array1);
-            if(i == 0) {
-                if(savedPage >= 3) {
-                    if(savedPage % 2 == 0) {
+            if (i == 0) {
+                if (savedPage >= 5) {
+                    if (savedPage % 2 == 0) {
                         fetchNextPages(savedPage - 2);
                     } else {
                         fetchNextPages(savedPage - 1);
@@ -440,10 +445,10 @@ public class SaveThread extends AppCompatActivity {
         try {
             map3.putIfAbsent(page, 0);
             //noinspection DataFlowIssue
-            if(map3.get(page) >= MAX_RETRIES) {
+            if (map3.get(page) >= MAX_RETRIES) {
                 runOnUiThread(() -> Toast.makeText(this, "第" + page + "页重试次数过多，放弃", Toast.LENGTH_SHORT).show());
                 giveUp = true;
-                return ;
+                return;
             }
             //noinspection DataFlowIssue
             map3.put(page, map3.get(page) + 1);
@@ -467,10 +472,13 @@ public class SaveThread extends AppCompatActivity {
         ArrayList<Reply> array1 = new ArrayList<>();
         if (page == 0) {
             totalPage = (int) Math.ceil((double) jsonObject.get("ReplyCount").getAsInt() / 19);
+            String cookie = jsonObject.get("user_hash").getAsString();
+            poCookie = cookie;
             Reply reply = new Reply(
                     jsonObject.get("title").getAsString(),
                     jsonObject.get("name").getAsString(),
-                    jsonObject.get("user_hash").getAsString(),
+                    cookie,
+                    true,
                     jsonObject.get("content").getAsString(),
                     jsonObject.get("now").getAsString(),
                     jsonObject.get("id").getAsString()
@@ -481,10 +489,12 @@ public class SaveThread extends AppCompatActivity {
             for (int j = 0; j < array.size(); j++) {
                 JsonObject object = array.get(j).getAsJsonObject();
                 if (!Objects.equals(object.get("user_hash").getAsString(), "Tips")) {
+                    String cookie = object.get("user_hash").getAsString();
                     array1.add(new Reply(
                             object.get("title").getAsString(),
                             object.get("name").getAsString(),
-                            object.get("user_hash").getAsString(),
+                            cookie,
+                            Objects.equals(cookie, poCookie),
                             object.get("content").getAsString(),
                             object.get("now").getAsString(),
                             object.get("id").getAsString()

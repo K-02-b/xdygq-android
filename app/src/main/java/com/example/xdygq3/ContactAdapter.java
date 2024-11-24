@@ -35,6 +35,7 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactV
 
     @Override
     public void onBindViewHolder(@NonNull ContactViewHolder holder, int position) {
+        final int textSize = shareData.getConfig().textSize;
         Contact contact = contactList.get(position);
         holder.linearLayout.setOnClickListener(item -> {
             if (!Objects.equals(contact.getTag(), "")) {
@@ -53,7 +54,12 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactV
             holder.avatar.setImageResource(contact.getAvatar());
         }
         holder.name.setText(contact.getName());
-        holder.name.setTextSize(shareData.getConfig().textSize + 4);
+        holder.name.setTextSize(textSize + 4);
+        if (!contact.getMark().isEmpty()) {
+            holder.mark.setVisibility(TextView.VISIBLE);
+            holder.mark.setText(contact.getMark());
+            holder.mark.setTextSize(textSize);
+        }
     }
 
     @Override
@@ -61,16 +67,48 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactV
         return contactList.size();
     }
 
+    public void deleteId(String Id) {
+        int position = 0;
+        for (Contact contact : contactList) {
+            if (contact.getTag().equals(Id)) {
+                break;
+            }
+            position++;
+        }
+        if (position == contactList.size()) {
+            return;
+        }
+        contactList.remove(position);
+        notifyItemRemoved(position);
+    }
+
+    public void changeMark(String Id, String mark) {
+        int position = 0;
+        for (Contact contact : contactList) {
+            if (contact.getTag().equals(Id)) {
+                break;
+            }
+            position++;
+        }
+        if (position == contactList.size()) {
+            return;
+        }
+        contactList.get(position).setMark(mark);
+        notifyItemChanged(position);
+    }
+
     static class ContactViewHolder extends RecyclerView.ViewHolder {
         LinearLayout linearLayout;
         ImageView avatar;
         TextView name;
+        TextView mark;
 
         ContactViewHolder(View itemView) {
             super(itemView);
             linearLayout = itemView.findViewById(R.id.linearLayout_contact);
             avatar = itemView.findViewById(R.id.avatar);
             name = itemView.findViewById(R.id.name);
+            mark = itemView.findViewById(R.id.mark_text);
         }
     }
 }

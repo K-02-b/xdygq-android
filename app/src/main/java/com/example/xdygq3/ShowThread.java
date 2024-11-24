@@ -13,16 +13,24 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 public class ShowThread extends AppCompatActivity {
     private RecyclerView recyclerView;
+    private ContactAdapter contactAdapter;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EventBus.getDefault().register(this);
         setContentView(R.layout.recycler_layout);
 
         Toolbar toolbar = findViewById(R.id.toolbar_recycler);
@@ -58,8 +66,17 @@ public class ShowThread extends AppCompatActivity {
 //                }
 //            }
             for (int i = 0; i < savedThreadsJson.size(); i++) {
-                String Id = savedThreadsJson.get(i).getAsJsonObject().get("id").getAsString();
-                contactList.add(new Contact(null, Id, this, ShowAThread.class, Id));
+                try {
+                    JsonObject jsonObject = savedThreadsJson.get(i).getAsJsonObject();
+                    String Id = jsonObject.get("id").getAsString();
+                    String Mark = "";
+                    if (jsonObject.has("mark")) {
+                        Mark = jsonObject.get("mark").getAsString();
+                    }
+                    contactList.add(new Contact(null, Id, this, ShowAThread.class, Mark));
+                } catch (Exception e) {
+                    Log.e("ShowThread", "Error: " + e);
+                }
             }
         } catch (Exception e) {
             Log.e("ShowThread", "Error: " + e);
@@ -70,9 +87,70 @@ public class ShowThread extends AppCompatActivity {
         }
         Log.i("ShowThread", "contactList size: " + contactList.size());
         Log.i("ShowThread", "contactList: " + contactList);
-        ContactAdapter contactAdapter = new ContactAdapter(contactList);
+        contactAdapter = new ContactAdapter(contactList);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(contactAdapter);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+    }
+
+    /**
+     * 判断字符串是否以指定前缀开始，并解析其后的下划线后的内容。
+     *
+     * @param input  输入字符串
+     * @param prefix 前缀
+     * @return 解析后的字符串，如果没有匹配则返回原字符串
+     */
+    private String parseThreadId(String input, String prefix) {
+        if (input.startsWith(prefix)) {
+            int underscoreIndex = input.indexOf('_', prefix.length());
+            if (underscoreIndex != -1) {
+                return input.substring(underscoreIndex + 1);
+            }
+        }
+        return input;
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onMessageEvent(EventMessage message) {
+        String title = message.getMessage();
+        Log.i("ShowThread", "Received message: " + title);
+        String tag = parseThreadId(title, "THREAD_DELETED");
+        if (!title.equals(tag)) {
+            contactAdapter.deleteId(tag);
+        }
+        tag = parseThreadId(title, "THREAD_CHANGED");
+        if (!title.equals(tag)) {
+            String finalTag = tag;
+            Runnable task = () -> {
+                String mark = "";
+                try {
+                    String savedThreads = Functions.getFile(this, "savedThreads.json");
+                    JsonArray savedThreadsJson = new Gson().fromJson(savedThreads, JsonArray.class);
+                    for (int i = 0; i < savedThreadsJson.size(); i++) {
+                        try {
+                            JsonObject jsonObject = savedThreadsJson.get(i).getAsJsonObject();
+                            if(Objects.equals(jsonObject.get("id").getAsString(), finalTag)) {
+                                if (jsonObject.has("mark")) {
+                                    mark = jsonObject.get("mark").getAsString();
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("ShowThread", "Error: " + e);
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("ShowThread", "Error: " + e);
+                }
+                String finalMark = mark;
+                runOnUiThread(() -> contactAdapter.changeMark(finalTag, finalMark));
+            };
+            new Thread(task).start();
+        }
     }
 }

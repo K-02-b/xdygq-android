@@ -44,7 +44,7 @@ public class MyJobService extends JobService {
         JobInfo jobInfo = new JobInfo.Builder(shareData.JobInfo_ID, componentName)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setMinimumLatency(shareData.getConfig() != null ? shareData.getConfig().DelayTime : 10000)
-                .setBackoffCriteria(shareData.getConfig() != null ? shareData.getConfig().DelayTime * 2 : 20000, JobInfo.BACKOFF_POLICY_LINEAR)
+                .setBackoffCriteria(shareData.getConfig() != null ? shareData.getConfig().DelayTime * 2L : 20000, JobInfo.BACKOFF_POLICY_LINEAR)
                 .build();
         scheduler.cancelAll();
         scheduler.schedule(jobInfo);
