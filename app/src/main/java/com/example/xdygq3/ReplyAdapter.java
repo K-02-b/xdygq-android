@@ -1,5 +1,9 @@
 package com.example.xdygq3;
 
+import android.graphics.Color;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,13 +11,16 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
     private List<Reply> replies;
 
     public ReplyAdapter(List<Reply> replies) {
-        this.replies = replies;
+        this.replies = new ArrayList<>(replies);
     }
 
     @NonNull
@@ -42,7 +49,7 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
     }
 
     public void setReplies(List<Reply> replies) {
-        this.replies = replies;
+        this.replies = new ArrayList<>(replies);
         notifyDataSetChanged();
     }
 
@@ -56,10 +63,82 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
             for (int i = 0; i < replies.size(); i++) {
                 String content = replies.get(i).getContent();
                 if (content.contains(word)) {
-                    content = content.replace(word, "<b><font style=\"background-color: #ADD8E6\">" + word + "</font></b>");
+                    content = content.replace(word, wrapTag("<font color=\"#ADD8E6\">") + word + wrapTag("</font>"));
                     replies.get(i).setContent(content);
                     notifyItemChanged(i);
                 }
+            }
+        }
+    }
+
+    private String wrapTag(String text) {
+        return "<!--begin-tag-->" + text + "<!--end-tag-->";
+    }
+
+    public void wrap(Classes.Word word) {
+        if(word != null) {
+            String content = replies.get(word.outPosition).getContent();
+            String regex = "<!--begin-tag-->(.*?)<!--end-tag-->";
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(content);
+            StringBuffer sb = new StringBuffer();
+            while (matcher.find()) {
+                matcher.appendReplacement(sb, "");
+            }
+            matcher.appendTail(sb);
+            String result = sb.toString();
+            int count = 0;
+            pattern = Pattern.compile(Pattern.quote(word.word), Pattern.CASE_INSENSITIVE);
+            matcher = pattern.matcher(result);
+            sb = new StringBuffer();
+            while (matcher.find()) {
+                count++;
+                if(count == word.position) {
+                    matcher.appendReplacement(sb, wrapTag("<font color=\"red\">") + matcher.group() + wrapTag("</font>"));
+                } else {
+                    matcher.appendReplacement(sb, wrapTag("<font color=\"#ADD8E6\">") + matcher.group() + wrapTag("</font>"));
+                }
+            }
+            matcher.appendTail(sb);
+            content = sb.toString();
+            replies.get(word.outPosition).setContent(content);
+            notifyItemChanged(word.outPosition);
+        }
+    }
+
+    public void unWrap(Classes.Word word) {
+        if(word != null) {
+            String content = replies.get(word.outPosition).getContent();
+            String regex = wrapTag("(.*?)");
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(content);
+            StringBuffer sb = new StringBuffer();
+            while (matcher.find()) {
+                matcher.appendReplacement(sb, "");
+            }
+            matcher.appendTail(sb);
+            String result = sb.toString();
+            content = result.replace(word.word, wrapTag("<font color=\"#ADD8E6\">") + word.word + wrapTag("</font>"));
+            replies.get(word.outPosition).setContent(content);
+            notifyItemChanged(word.outPosition);
+        }
+    }
+
+    public void unWrap() {
+        for (int i = 0; i < replies.size(); i++) {
+            String content = replies.get(i).getContent();
+            if(content.contains("<!--begin-tag-->") && content.contains("<!--end-tag-->")) {
+                String regex = wrapTag("(.*?)");
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(content);
+                StringBuffer sb = new StringBuffer();
+                while (matcher.find()) {
+                    matcher.appendReplacement(sb, "");
+                }
+                matcher.appendTail(sb);
+                String result = sb.toString();
+                replies.get(i).setContent(result);
+                notifyItemChanged(i);
             }
         }
     }

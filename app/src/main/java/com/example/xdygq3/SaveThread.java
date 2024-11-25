@@ -56,7 +56,7 @@ public class SaveThread extends AppCompatActivity {
     private int savedPage = -1;
     private boolean giveUp = false;
     private String poCookie = null;
-    private Classes.Post Post = null;
+    private Classes.Post post = null;
     private String filePath = null;
     /**
      * @noinspection FieldCanBeLocal
@@ -135,19 +135,19 @@ public class SaveThread extends AppCompatActivity {
         if (switch1 != null) {
             post.OnlyPo = switch1.isChecked();
         }
-        Post = post;
+        this.post = post;
         try {
             String jsonString = Functions.getFile(this, SAVED_THREADS_FILE);
             JsonArray jsonArray = new Gson().fromJson(jsonString, JsonArray.class);
             for (JsonElement jsonElement : jsonArray) {
                 int id = jsonElement.getAsJsonObject().get("id").getAsInt();
-                if (id == Post.Id) {
+                if (id == this.post.Id) {
                     this.savedPage = jsonElement.getAsJsonObject().get("savedPage").getAsInt();
                     break;
                 }
             }
             if (this.savedPage != -1) {
-                ArrayList<Reply> replies = readAndMergeReplies(Post.Id);
+                ArrayList<Reply> replies = readAndMergeReplies(this.post.Id + (this.post.OnlyPo ? "_po" : ""));
                 for (Reply reply : replies) {
                     map2.put(reply.getId(), true);
                 }
@@ -157,7 +157,7 @@ public class SaveThread extends AppCompatActivity {
             this.savedPage = -1;
             Log.e("SaveThread", "onButtonClick: ", e);
         }
-        filePath = getAvailableFilePath(Post.Id);
+        filePath = getAvailableFilePath(this.post.Id + (this.post.OnlyPo ? "_po" : ""));
         try {
             fetchPostData(0);
         } catch (InterruptedException e) {
@@ -174,8 +174,9 @@ public class SaveThread extends AppCompatActivity {
             }
             ArrayList<Reply> array = map.get(i);
             assert array != null;
-            if (i > savedPage) {
+            if (i >= savedPage) {
                 for (Reply reply : array) {
+                    Log.d("processReplies", "reply.id: " + reply.getId());
                     if (!map2.containsKey(reply.getId())) {
                         replies.add(reply.toJsonObject());
                         runOnUiThread(() -> adapter.add(reply));
@@ -186,7 +187,7 @@ public class SaveThread extends AppCompatActivity {
                 saveRepliesToFile(i);
                 updateSavedThreadsList(i);
                 replies = new JsonArray();
-                filePath = getAvailableFilePath(Post.Id);
+                filePath = getAvailableFilePath(post.Id + (post.OnlyPo ? "_po" : ""));
             }
         }
         saveRepliesToFile();
@@ -194,7 +195,7 @@ public class SaveThread extends AppCompatActivity {
     }
 
 
-    public ArrayList<Reply> readAndMergeReplies(Integer Id) {
+    public ArrayList<Reply> readAndMergeReplies(String Id) {
         Map<Integer, Reply> uniqueReplies = new HashMap<>();
         int j = 1;
         String filePath = FILE_PREFIX + Id + "_" + j + ".json";
@@ -272,12 +273,12 @@ public class SaveThread extends AppCompatActivity {
         }
     }
 
-    private String getAvailableFilePath(int postId) {
+    private String getAvailableFilePath(String postId) {
         int i = 1;
         String filePath = FILE_PREFIX + postId + "_" + i + ".json";
         while (Boolean.TRUE.equals(Functions.checkFileExists(this, filePath))) {
             i++;
-            filePath = FILE_PREFIX + postId + "_" + i + ".json";
+            filePath = FILE_PREFIX  + postId + "_" + i + ".json";
         }
         return filePath;
     }
@@ -294,14 +295,14 @@ public class SaveThread extends AppCompatActivity {
                 savedThreadsJsonArray = new JsonArray();
             }
             boolean flag = false;
-            if (!isPostInList(savedThreadsJsonArray, Post.Id)) {
+            if (!isPostInList(savedThreadsJsonArray, post.Id + (post.OnlyPo ? "_po" : ""))) {
                 JsonObject jsonObject = new JsonObject();
-                jsonObject.addProperty("id", Post.Id);
+                jsonObject.addProperty("id", post.Id + (post.OnlyPo ? "_po" : ""));
                 jsonObject.addProperty("savedPage", i);
                 savedThreadsJsonArray.add(jsonObject);
                 flag = true;
             } else {
-                Integer position = getThreadPosition(savedThreadsJsonArray, Post.Id);
+                Integer position = getThreadPosition(savedThreadsJsonArray, post.Id + (post.OnlyPo ? "_po" : ""));
                 JsonObject jsonObject = savedThreadsJsonArray.get(position).getAsJsonObject();
                 if (!jsonObject.has("savedPage") || jsonObject.get("savedPage").getAsInt() != i) {
                     jsonObject.addProperty("savedPage", i);
@@ -319,22 +320,22 @@ public class SaveThread extends AppCompatActivity {
         }
     }
 
-    private boolean isPostInList(JsonArray list, int postId) {
+    private boolean isPostInList(JsonArray list, String postId) {
         if (list == null) return false;
         for (int j = 0; j < list.size(); j++) {
             JsonObject jsonObject = list.get(j).getAsJsonObject();
-            if (jsonObject.get("id").getAsInt() == postId) {
+            if (Objects.equals(jsonObject.get("id").getAsString(), postId)) {
                 return true;
             }
         }
         return false;
     }
 
-    private Integer getThreadPosition(JsonArray list, int postId) {
+    private Integer getThreadPosition(JsonArray list, String postId) {
         if (list == null) return null;
         for (int j = 0; j < list.size(); j++) {
             JsonObject jsonObject = list.get(j).getAsJsonObject();
-            if (jsonObject.get("id").getAsInt() == postId) {
+            if (Objects.equals(jsonObject.get("id").getAsString(), postId)) {
                 return j;
             }
         }
@@ -357,8 +358,9 @@ public class SaveThread extends AppCompatActivity {
     }
 
     private void fetchPostData(Integer i) throws InterruptedException {
-        String api = Post.OnlyPo ? API_URL_PO : API_URL_THREAD;
-        String url = api + Post.Id + "/page/" + i;
+        String api = post.OnlyPo ? API_URL_PO : API_URL_THREAD;
+        String url = api + post.Id + "/page/" + i;
+        Log.d("SaveThread", "url: " + url);
         OkHttpClient client = new OkHttpClient.Builder()
                 .sslSocketFactory(shareData.getSSLContext().getSocketFactory(), shareData.trustAllCerts)
                 .build();
@@ -417,8 +419,14 @@ public class SaveThread extends AppCompatActivity {
         }
         try {
             String responseBody = response.body().string();
+            try {
+                Log.d("SaveThread", "onResponse: " + responseBody);
+            } catch (Exception e) {
+                Log.e("SaveThread", "onResponse", e);
+            }
             JsonObject jsonObject = new Gson().fromJson(responseBody, JsonObject.class).getAsJsonObject();
             ArrayList<Reply> array1 = parseReplies(i, jsonObject);
+            Log.d("SaveThread", "array1.size: " + array1.size());
             map.put(i, array1);
             if (i == 0) {
                 if (savedPage >= 5) {
@@ -471,7 +479,11 @@ public class SaveThread extends AppCompatActivity {
     private ArrayList<Reply> parseReplies(int page, JsonObject jsonObject) {
         ArrayList<Reply> array1 = new ArrayList<>();
         if (page == 0) {
-            totalPage = (int) Math.ceil((double) jsonObject.get("ReplyCount").getAsInt() / 19);
+            int replyCount = jsonObject.get("ReplyCount").getAsInt();
+            if(replyCount == 0) {
+                replyCount = 1;
+            }
+            totalPage = (int) Math.ceil((double) replyCount / 19);
             String cookie = jsonObject.get("user_hash").getAsString();
             poCookie = cookie;
             Reply reply = new Reply(

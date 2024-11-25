@@ -6,6 +6,24 @@ import java.util.List;
 
 public class Classes {
 
+    public static class Word {
+        public String word;
+        public Integer outPosition;
+        public Integer position;
+
+        public Word(String word, Integer outPosition, Integer position) {
+            this.word = word;
+            this.outPosition = outPosition;
+            this.position = position;
+        }
+
+        public Word(Integer outPosition, Integer position) {
+            this.word = "";
+            this.outPosition = outPosition;
+            this.position = position;
+        }
+    }
+
     public static class Post {
         public int Id;
         public String Mark;
