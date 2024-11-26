@@ -1,7 +1,5 @@
 package com.example.xdygq3;
 
-import static java.lang.Math.abs;
-
 import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -47,20 +45,22 @@ import java.util.concurrent.ConcurrentMap;
 
 
 public class ShowAThread extends AppCompatActivity {
-    public static String poCookie = null;
+    public static String poCookie;
     public static ConcurrentMap<String, Reply> replyMap = new ConcurrentHashMap<>();
     private RecyclerView recyclerView;
     private ReplyAdapter adapter;
     private ArrayList<Reply> replies;
-    private Boolean changed = false;
-    private int now = 0;
-    private int lastNow = 0;
+    private Boolean changed;
+    private Boolean onlyPo;
+    private int now;
+    private int lastNow;
     private ArrayList<Classes.Word> searchResult;
     private TextView resultCount;
     private String tag;
     private String searchWord;
     private Classes.Word currentWord;
     private ArrayList<Integer> uniqueSearchResult;
+    private Integer nowProcess;
 
     @SuppressLint("SetTextI18n")
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +71,6 @@ public class ShowAThread extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar_recycler);
         setSupportActionBar(toolbar);
         toolbar.setTitle("查看缓存至本地的串");
-        toolbar.setTitleTextColor(Color.WHITE);
         toolbar.setNavigationIcon(AppCompatResources.getDrawable(this, R.drawable.ic_baseline_arrow_back_ios_24));
         toolbar.setContentInsetStartWithNavigation(10);
         toolbar.setNavigationOnClickListener(v -> {
@@ -94,6 +93,10 @@ public class ShowAThread extends AppCompatActivity {
         }
         adapter = new ReplyAdapter(replies);
         recyclerView.setAdapter(adapter);
+        changed = false;
+        onlyPo = false;
+        now = 0;
+        lastNow = 0;
 
         EditText input = findViewById(R.id.search_text);
         resultCount = findViewById(R.id.result_counter);
@@ -162,10 +165,10 @@ public class ShowAThread extends AppCompatActivity {
             }
             updateUI();
         });
-        if(Functions.checkFileExists(this, tag + "_process.txt")) {
+        if (Functions.checkFileExists(this, tag + "_process.txt")) {
             String process = Functions.getFile(this, tag + "_process.txt");
             LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-            if(layoutManager != null) {
+            if (layoutManager != null) {
                 layoutManager.scrollToPositionWithOffset(process.isEmpty() ? 0 : Integer.parseInt(process), 0);
             }
         }
@@ -183,15 +186,23 @@ public class ShowAThread extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         Log.i("ShowAThread", "onDestroy");
-        Functions.PutFile(this, tag + "_process.txt", String.valueOf(getCurrentPosition()));
+        save_process();
         EventBus.getDefault().unregister(this);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        Log.i("ShowAThread", "onPause");
-        Functions.PutFile(this, tag + "_process.txt", String.valueOf(getCurrentPosition()));
+        Log.d("ShowAThread", "onPause");
+        save_process();
+    }
+
+    private void save_process() {
+        if (!onlyPo) {
+            Functions.PutFile(this, tag + "_process.txt", String.valueOf(getCurrentPosition()));
+        } else {
+            Functions.PutFile(this, tag + "_process.txt", String.valueOf(nowProcess));
+        }
     }
 
     public void updateUI() {
@@ -208,9 +219,9 @@ public class ShowAThread extends AppCompatActivity {
             LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
             if (layoutManager != null) {
                 View itemView = layoutManager.findViewByPosition(position);
-                if(itemView == null) {
+                if (itemView == null) {
                     Log.d("ShowAThread", "itemView is null");
-                    if(position >= 2) {
+                    if (position >= 2) {
                         layoutManager.scrollToPosition(position - 2);
                     } else if (searchResult.size() - position >= 3) {
                         layoutManager.scrollToPosition(position + 2);
@@ -287,7 +298,8 @@ public class ShowAThread extends AppCompatActivity {
         menu.add(0, 2, 2,
                 Functions.menuIconWithText(Objects.requireNonNull(AppCompatResources.getDrawable(this, R.drawable.information)), "说明")).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         menu.add(0, 3, 3, "添加备注");
-        menu.add(0, 4, 4,
+        menu.add(0, 4, 4, "只看Po");
+        menu.add(0, 5, 5,
                 Functions.menuIconWithText(Objects.requireNonNull(AppCompatResources.getDrawable(this, R.drawable.delete)), "删除"));
         return super.onCreateOptionsMenu(menu);
     }
@@ -300,39 +312,16 @@ public class ShowAThread extends AppCompatActivity {
             LinearLayout linearLayout = findViewById(R.id.search_bar);
             if (linearLayout.getVisibility() == View.GONE) {
                 linearLayout.setVisibility(View.VISIBLE);
-                if(searchWord != null && !searchWord.isEmpty()) {
+                if (searchWord != null && !searchWord.isEmpty()) {
                     runOnUiThread(() -> adapter.wrap(searchWord));
                 }
-                if(currentWord != null) {
+                if (currentWord != null) {
                     runOnUiThread(() -> adapter.wrap(currentWord));
                 }
             } else {
                 linearLayout.setVisibility(View.GONE);
                 runOnUiThread(() -> adapter.unWrap());
             }
-        } else if (item.getItemId() == 4) {
-
-            int j = 0;
-            String filePath = SaveThread.FILE_PREFIX + tag + "_" + j + ".json";
-            while (Functions.checkFileExists(this, filePath)) {
-                Functions.deleteFile(this, filePath);
-                j++;
-                filePath = SaveThread.FILE_PREFIX + tag + "_" + j + ".json";
-            }
-            String jsonString = Functions.getFile(this, SaveThread.SAVED_THREADS_FILE);
-            JsonArray threads = new Gson().fromJson(jsonString, JsonArray.class);
-            for (int i = 0; i < threads.size(); i++) {
-                JsonObject thread = threads.get(i).getAsJsonObject();
-                if (thread.get("id").getAsInt() == Integer.parseInt(tag)) {
-                    threads.remove(i);
-                    break;
-                }
-            }
-            Functions.PutFile(this, SaveThread.SAVED_THREADS_FILE, new Gson().toJson(threads));
-            String message = "THREAD_DELETED_" + tag;
-            Log.i("ShowAThread", "Posted message: " + message);
-            EventBus.getDefault().post(new EventMessage(1, message));
-            finish();
         } else if (item.getItemId() == 2) {
             String guide = "可能发生卡顿\n" +
                     "长按可以复制\n" +
@@ -364,9 +353,7 @@ public class ShowAThread extends AppCompatActivity {
         } else if (item.getItemId() == 3) {
             LayoutInflater inflater = getLayoutInflater();
             View dialogView = inflater.inflate(R.layout.input_dialog, null);
-
             EditText input = dialogView.findViewById(R.id.input_text);
-
             new AlertDialog.Builder(this)
                     .setTitle("添加备注")
                     .setView(dialogView)
@@ -378,6 +365,47 @@ public class ShowAThread extends AppCompatActivity {
                     })
                     .setNegativeButton("取消", (dialog, which) -> dialog.cancel())
                     .show();
+        } else if (item.getItemId() == 4) {
+            if (!onlyPo) {
+                nowProcess = getCurrentPosition();
+                adapter.onlyPo();
+                onlyPo = true;
+                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (layoutManager != null) {
+                    layoutManager.scrollToPositionWithOffset(0, 0);
+                }
+            } else {
+                adapter.unOnlyPo();
+                onlyPo = false;
+                if(nowProcess != null) {
+                    LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                    if (layoutManager != null) {
+                        layoutManager.scrollToPositionWithOffset(nowProcess, 0);
+                    }
+                }
+            }
+        } else if (item.getItemId() == 5) {
+            int j = 0;
+            String filePath = SaveThread.FILE_PREFIX + tag + "_" + j + ".json";
+            while (Functions.checkFileExists(this, filePath)) {
+                Functions.deleteFile(this, filePath);
+                j++;
+                filePath = SaveThread.FILE_PREFIX + tag + "_" + j + ".json";
+            }
+            String jsonString = Functions.getFile(this, SaveThread.SAVED_THREADS_FILE);
+            JsonArray threads = new Gson().fromJson(jsonString, JsonArray.class);
+            for (int i = 0; i < threads.size(); i++) {
+                JsonObject thread = threads.get(i).getAsJsonObject();
+                if (thread.get("id").getAsInt() == Integer.parseInt(tag)) {
+                    threads.remove(i);
+                    break;
+                }
+            }
+            Functions.PutFile(this, SaveThread.SAVED_THREADS_FILE, new Gson().toJson(threads));
+            String message = "THREAD_DELETED_" + tag;
+            Log.i("ShowAThread", "Posted message: " + message);
+            EventBus.getDefault().post(new EventMessage(1, message));
+            finish();
         }
         return super.onOptionsItemSelected(item);
     }

@@ -35,7 +35,6 @@ public class ShowThread extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar_recycler);
         toolbar.setTitle("查看缓存至本地的串");
-        toolbar.setTitleTextColor(Color.WHITE);
         toolbar.setNavigationIcon(AppCompatResources.getDrawable(this, R.drawable.ic_baseline_arrow_back_ios_24));
         toolbar.setContentInsetStartWithNavigation(10);
         toolbar.setNavigationOnClickListener(v -> {

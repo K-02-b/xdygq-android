@@ -78,10 +78,6 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
             return true;
         });
 
-        if (reply.is_po()) {
-            ifPo.setVisibility(View.VISIBLE);
-        }
-
         final String cookie = reply.getCookie();
         cookieView.setText(cookie);
         cookieView.setTextSize(textSize);
@@ -89,6 +85,12 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
             copy(cookie, "饼干");
             return true;
         });
+
+        if (reply.is_po()) {
+            ifPo.setVisibility(View.VISIBLE);
+        } else {
+            ifPo.setVisibility(View.GONE);
+        }
 
         final String content = reply.getContent();
         final Spanned spannedContent = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT);
@@ -124,6 +126,24 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
             copy(Id, "串号");
             return true;
         });
+    }
+
+    private static @NonNull String getVisibilityString(int visibility) {
+        String visibilityString;
+        switch (visibility) {
+            case View.VISIBLE:
+                visibilityString = "VISIBLE";
+                break;
+            case View.INVISIBLE:
+                visibilityString = "INVISIBLE";
+                break;
+            case View.GONE:
+                visibilityString = "GONE";
+                break;
+            default:
+                visibilityString = "default";
+        }
+        return visibilityString;
     }
 
     private @NonNull ClickableSpan getClickableSpan(Matcher matcher) {
@@ -309,6 +329,7 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
         String name = jsonObject.getString("name");
         String cookie = jsonObject.getString("user_hash");
         Boolean isPo = ShowAThread.poCookie != null && Objects.equals(cookie, ShowAThread.poCookie);
+        Log.d("parseResponseToReply", "Loading cookie: " + cookie + " and poCookie: " + ShowAThread.poCookie);
         String content = jsonObject.getString("content");
         String timestamp = jsonObject.getString("now");
         String id = jsonObject.getString("id");
@@ -328,7 +349,6 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
 
     public interface OnFetchPostCallback {
         void onFetchSuccess(Reply reply);
-
         void onFetchFailure(String errorMessage);
     }
 }

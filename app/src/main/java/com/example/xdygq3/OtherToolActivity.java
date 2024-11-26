@@ -22,7 +22,6 @@ public class OtherToolActivity extends AppCompatActivity {
         setContentView(R.layout.other_activity);
         Toolbar toolbar = findViewById(R.id.toolbar_other);
         toolbar.setTitle("养鸽器");
-        toolbar.setTitleTextColor(Color.WHITE);
 
         RecyclerView recyclerViewContacts = findViewById(R.id.recyclerView_contacts);
         recyclerViewContacts.setLayoutManager(new LinearLayoutManager(this));

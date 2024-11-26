@@ -18,9 +18,11 @@ import java.util.regex.Pattern;
 
 public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
     private List<Reply> replies;
+    private final List<Reply> unfilteredReplies;
 
-    public ReplyAdapter(List<Reply> replies) {
-        this.replies = new ArrayList<>(replies);
+    public ReplyAdapter(List<Reply> newReplies) {
+        replies = new ArrayList<>(newReplies);
+        unfilteredReplies = new ArrayList<>(newReplies);
     }
 
     @NonNull
@@ -141,5 +143,21 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
                 notifyItemChanged(i);
             }
         }
+    }
+
+    public void onlyPo() {
+        List<Reply> temp = new ArrayList<>();
+        for (int i = 0; i < replies.size(); i++) {
+            if(replies.get(i).is_po()) {
+                temp.add(replies.get(i));
+            }
+        }
+        replies = temp;
+        notifyDataSetChanged();
+    }
+
+    public void unOnlyPo() {
+        replies = new ArrayList<>(unfilteredReplies);
+        notifyDataSetChanged();
     }
 }

@@ -81,7 +81,6 @@ public class SaveThread extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar_saveThread);
         setSupportActionBar(toolbar);
         toolbar.setTitle("缓存串至本地");
-        toolbar.setTitleTextColor(Color.WHITE);
         toolbar.setNavigationIcon(AppCompatResources.getDrawable(this, R.drawable.ic_baseline_arrow_back_ios_24));
         toolbar.setContentInsetStartWithNavigation(10);
         toolbar.setNavigationOnClickListener(v -> finish());

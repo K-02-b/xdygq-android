@@ -115,7 +115,6 @@ public class EditionActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar2);
         setSupportActionBar(toolbar);
         Objects.requireNonNull(getSupportActionBar()).setTitle("编辑");
-        toolbar.setTitleTextColor(Color.WHITE);
         toolbar.setNavigationIcon(AppCompatResources.getDrawable(this, R.drawable.ic_baseline_arrow_back_ios_24));
         toolbar.setContentInsetStartWithNavigation(10);
         toolbar.setNavigationOnClickListener(v -> {

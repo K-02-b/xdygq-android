@@ -8,9 +8,11 @@
         android:id="@+id/toolbar_other"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
         android:minHeight="?attr/actionBarSize"
-        android:theme="?attr/actionBarTheme"
+        android:theme="@style/Theme.Xdygq3"
+        android:background="?attr/titlePrimary"
+        app:title="养鸽器"
+        app:titleTextColor="?attr/titleTextColor"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

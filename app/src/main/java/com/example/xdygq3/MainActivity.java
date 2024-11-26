@@ -567,7 +567,6 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         Objects.requireNonNull(getSupportActionBar()).setTitle("养鸽器");
-        toolbar.setTitleTextColor(Color.WHITE);
     }
 
     @Override
