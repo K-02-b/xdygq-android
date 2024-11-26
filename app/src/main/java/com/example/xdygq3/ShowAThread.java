@@ -461,8 +461,12 @@ public class ShowAThread extends AppCompatActivity {
                 .setPositiveButton("确定", (dialog, which) -> {
                     String inputText = finalInput.getText().toString();
                     if (!inputText.isEmpty()) {
-                        int number = Integer.parseInt(inputText);
-                        handleInputNumber(number);
+                        try {
+                            int number = Integer.parseInt(inputText);
+                            handleInputNumber(number);
+                        } catch (Exception e) {
+                            Toast.makeText(this, "输入的内容无效", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 })
                 .setNegativeButton("取消", (dialog, which) -> dialog.cancel())
