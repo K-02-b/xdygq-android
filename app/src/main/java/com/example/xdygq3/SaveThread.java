@@ -175,7 +175,7 @@ public class SaveThread extends AppCompatActivity {
             assert array != null;
             if (i >= savedPage) {
                 for (Reply reply : array) {
-                    Log.d("processReplies", "reply.id: " + reply.getId());
+//                    Log.d("processReplies", "reply.id: " + reply.getId());
                     if (!map2.containsKey(reply.getId())) {
                         replies.add(reply.toJsonObject());
                         runOnUiThread(() -> adapter.add(reply));
@@ -418,11 +418,7 @@ public class SaveThread extends AppCompatActivity {
         }
         try {
             String responseBody = response.body().string();
-            try {
-                Log.d("SaveThread", "onResponse: " + responseBody);
-            } catch (Exception e) {
-                Log.e("SaveThread", "onResponse", e);
-            }
+//            Log.d("SaveThread", "onResponse: " + responseBody);
             JsonObject jsonObject = new Gson().fromJson(responseBody, JsonObject.class).getAsJsonObject();
             ArrayList<Reply> array1 = parseReplies(i, jsonObject);
             Log.d("SaveThread", "array1.size: " + array1.size());

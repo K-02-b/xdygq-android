@@ -216,6 +216,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
+            if(thread != null && thread.isAlive()) {
+                thread.interrupt();
+                thread = null;
+            }
+        } catch (Exception e) {
+            Log.e("MainActivity", "线程错误", e);
+        }
+        try {
             setContentView(R.layout.activity_main);
             setToolbar();
         } catch (NullPointerException e) {

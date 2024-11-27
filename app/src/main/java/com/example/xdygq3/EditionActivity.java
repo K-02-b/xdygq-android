@@ -137,7 +137,7 @@ public class EditionActivity extends AppCompatActivity {
             case 0:
                 TableLayout tableLayout = findViewById(R.id.TableLayout2);
                 TableRow tableRow = new TableRow(context);
-                Functions.addEditRow(context, tableRow, new Classes.Compat[]{new Classes.Compat("60000000", View.generateViewId(), "id"), new Classes.Compat("新串", View.generateViewId(), "mark")});
+                Functions.addEditRow(context, tableRow, new Classes.Compat[]{new Classes.Compat("60000000", View.generateViewId(), "id", shareData.getConfig().textSize, 80), new Classes.Compat("新串", View.generateViewId(), "mark", shareData.getConfig().textSize, 120)});
                 TableRow.LayoutParams layoutParams = new TableRow.LayoutParams(
                         TableRow.LayoutParams.WRAP_CONTENT,
                         TableRow.LayoutParams.WRAP_CONTENT);
@@ -222,7 +222,8 @@ public class EditionActivity extends AppCompatActivity {
                             config.Posts.get(cnt).Id = id;
                             Classes.Count tmp = Counts.get(id);
                             config.Posts.get(cnt).ReplyCount = tmp != null ? tmp.ReplyCount : 0;
-                            config.Posts.get(cnt).NewCount = tmp != null ? tmp.NewCount : shareData.NewThreadFlag;
+//                            config.Posts.get(cnt).NewCount = tmp != null ? tmp.NewCount : shareData.NewThreadFlag;
+                            config.Posts.get(cnt).NewCount = -1;
                             available = true;
                         } else if (tag.equals("mark")) {
                             config.Posts.get(cnt).Mark = editText.getText().toString();

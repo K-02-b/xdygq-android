@@ -10,17 +10,27 @@ public class Classes {
         public String word;
         public Integer outPosition;
         public Integer position;
+        public Integer idx;
+
+        public Word(String word, Integer outPosition, Integer position, Integer idx) {
+            this.word = word;
+            this.outPosition = outPosition;
+            this.position = position;
+            this.idx = idx;
+        }
 
         public Word(String word, Integer outPosition, Integer position) {
             this.word = word;
             this.outPosition = outPosition;
             this.position = position;
+            this.idx = -1;
         }
 
         public Word(Integer outPosition, Integer position) {
             this.word = "";
             this.outPosition = outPosition;
             this.position = position;
+            this.idx = -1;
         }
     }
 
@@ -65,26 +75,30 @@ public class Classes {
         public int id;
         public String tag;
         public int textSize;
+        public int minWidth;
 
         public Compat(String _c) {
             content = _c;
             id = View.generateViewId();
             tag = "";
-            textSize = shareData.config != null ? shareData.config.textSize : 15;
+            textSize = shareData.getConfig().textSize;
+            minWidth = 0;
         }
 
         public Compat(String _c, int _i) {
             content = _c;
             id = _i;
             tag = "";
-            textSize = shareData.config != null ? shareData.config.textSize : 15;
+            textSize = shareData.getConfig().textSize;
+            minWidth = 0;
         }
 
         public Compat(String _c, int _i, String _t) {
             content = _c;
             id = _i;
             tag = _t;
-            textSize = shareData.config != null ? shareData.config.textSize : 15;
+            textSize = shareData.getConfig().textSize;
+            minWidth = 0;
         }
 
         public Compat(String _c, int _i, int _s) {
@@ -92,6 +106,7 @@ public class Classes {
             id = _i;
             tag = "";
             textSize = _s;
+            minWidth = 0;
         }
 
         public Compat(String _c, int _i, String _t, int _s) {
@@ -99,6 +114,15 @@ public class Classes {
             id = _i;
             tag = _t;
             textSize = _s;
+            minWidth = 0;
+        }
+        
+        public Compat(String _c, int _i, String _t, int _s, int _w) {
+            content = _c;
+            id = _i;
+            tag = _t;
+            textSize = _s;
+            minWidth = _w;
         }
     }
 }

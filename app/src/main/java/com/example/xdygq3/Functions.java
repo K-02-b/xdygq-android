@@ -49,6 +49,9 @@ public class Functions {
             layoutParams.setMargins(10, 10, 10, 10);
             editText.setLayoutParams(layoutParams);
             editText.setPadding(10, 10, 10, 10);
+            float density = context.getResources().getDisplayMetrics().density;
+            int minWidthPx = (int) (item.minWidth * density + 0.5f);
+            editText.setMinWidth(minWidthPx);
             editText.setTextSize(TypedValue.COMPLEX_UNIT_SP, item.textSize);
             editText.setId(item.id);
             tableRow.addView(editText);
@@ -62,8 +65,8 @@ public class Functions {
              FileLock lock = fileChannel.lock(0, Long.MAX_VALUE, true)) { // 读取锁
             byte[] data = new byte[fis.available()];
             fis.read(data);
-            Log.i("getFile", "Getting file: " + filename);
-            Log.i("getFile", "Content: " + new String(data));
+            Log.d("getFile", "Getting file: " + filename);
+            Log.d("getFile", "Content: " + new String(data));
             return new String(data);
         } catch (FileNotFoundException e) {
             Log.e("getFile", "File not found: " + filename, e);
@@ -80,7 +83,7 @@ public class Functions {
             File file = new File(context.getFilesDir(), filename);
             if (file.exists()) {
                 if (file.delete()) {
-                    Log.i("deleteFile", "Deleted file: " + filename);
+                    Log.d("deleteFile", "Deleted file: " + filename);
                 } else {
                     Log.e("deleteFile", "Failed to delete file: " + filename);
                 }
@@ -97,7 +100,7 @@ public class Functions {
         try (FileInputStream fis = new FileInputStream(file);
              FileChannel fileChannel = fis.getChannel();
              FileLock lock = fileChannel.lock(0, Long.MAX_VALUE, true)) {
-            Log.i("checkFileExists", "Got file: " + filename);
+            Log.d("checkFileExists", "Got file: " + filename);
             return true;
         } catch (FileNotFoundException e) {
             Log.e("checkFileExists", "File not found: " + filename);
@@ -122,8 +125,8 @@ public class Functions {
     }
 
     public static void PutFile(Context context, String filename, String content) {
-        Log.i("PutFile", "Putting file: " + filename);
-        Log.i("PutFile", "Content: " + content);
+        Log.d("PutFile", "Putting file: " + filename);
+        Log.d("PutFile", "Content: " + content);
         FileChannel channel = null;
         FileLock lock = null;
         try {

@@ -1,9 +1,9 @@
 package com.example.xdygq3;
 
 import android.annotation.SuppressLint;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -60,7 +60,7 @@ public class ShowAThread extends AppCompatActivity {
     private String searchWord;
     private Classes.Word currentWord;
     private ArrayList<Integer> uniqueSearchResult;
-    private Integer nowProcess;
+    private JsonObject nowProcess;
 
     @SuppressLint("SetTextI18n")
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,12 +87,7 @@ public class ShowAThread extends AppCompatActivity {
 
         recyclerView.addItemDecoration(dividerItemDecoration);
 
-        replies = readAndMergeReplies(tag);
-        for (Reply reply : replies) {
-            replyMap.put(reply.getId(), reply);
-        }
-        adapter = new ReplyAdapter(replies);
-        recyclerView.setAdapter(adapter);
+        new Thread(this::drawUI).start();
         changed = false;
         onlyPo = false;
         now = 0;
@@ -138,7 +133,7 @@ public class ShowAThread extends AppCompatActivity {
                     now = searchResult.size();
                 }
             }
-            updateUI();
+            new Thread(this::updateUI).start();
         });
         ImageButton downButton = findViewById(R.id.search_button_down);
         downButton.setOnClickListener(v -> {
@@ -163,15 +158,40 @@ public class ShowAThread extends AppCompatActivity {
                     now = 1;
                 }
             }
-            updateUI();
+            new Thread(this::updateUI).start();
         });
-        if (Functions.checkFileExists(this, tag + "_process.txt")) {
-            String process = Functions.getFile(this, tag + "_process.txt");
-            LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-            if (layoutManager != null) {
-                layoutManager.scrollToPositionWithOffset(process.isEmpty() ? 0 : Integer.parseInt(process), 0);
+        nowProcess = new JsonObject();
+        try {
+            if (Functions.checkFileExists(this, tag + "_process.json")) {
+                String process = Functions.getFile(this, tag + "_process.json");
+                nowProcess = new Gson().fromJson(process, JsonObject.class);
+                if (nowProcess == null) {
+                    nowProcess = new JsonObject();
+                }
+                int out = 0, inner = 0;
+                if (nowProcess.has("out")) {
+                    out = nowProcess.get("out").getAsInt();
+                }
+                if (nowProcess.has("inner")) {
+                    inner = nowProcess.get("inner").getAsInt();
+                }
+                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (layoutManager != null) {
+                    layoutManager.scrollToPositionWithOffset(out, inner);
+                }
             }
+        } catch (Exception e) {
+            Log.e("ShowAThread", "onCreate", e);
         }
+    }
+
+    private void drawUI() {
+        replies = readAndMergeReplies(tag);
+        for (Reply reply : replies) {
+            replyMap.put(reply.getId(), reply);
+        }
+        adapter = new ReplyAdapter(replies);
+        runOnUiThread(() -> recyclerView.setAdapter(adapter));
     }
 
     private int getCurrentPosition() {
@@ -179,13 +199,23 @@ public class ShowAThread extends AppCompatActivity {
         if (layoutManager != null) {
             return layoutManager.findFirstVisibleItemPosition();
         }
-        return -1; // 如果LayoutManager为空，返回-1表示未找到位置
+        return 0;
+    }
+
+    private int getCurrentOffset() {
+        LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+        if (layoutManager != null) {
+//            return layoutManager.findFirstVisibleItemPosition();
+            View firstVisibleItemView = layoutManager.findViewByPosition(layoutManager.findFirstVisibleItemPosition());
+            return firstVisibleItemView == null ? 0 : firstVisibleItemView.getTop();
+        }
+        return 0;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.i("ShowAThread", "onDestroy");
+        Log.d("ShowAThread", "onDestroy");
         save_process();
         EventBus.getDefault().unregister(this);
     }
@@ -198,11 +228,16 @@ public class ShowAThread extends AppCompatActivity {
     }
 
     private void save_process() {
-        if (!onlyPo) {
-            Functions.PutFile(this, tag + "_process.txt", String.valueOf(getCurrentPosition()));
+        if(onlyPo) {
+            updateProcess("out_po", getCurrentPosition());
+            updateProcess("inner_po", getCurrentOffset());
         } else {
-            Functions.PutFile(this, tag + "_process.txt", String.valueOf(nowProcess));
+            updateProcess("out", getCurrentPosition());
+            updateProcess("inner", getCurrentOffset());
         }
+        Functions.PutFile(this, tag + "_process.json",
+                new Gson().toJson(nowProcess)
+        );
     }
 
     public void updateUI() {
@@ -215,22 +250,41 @@ public class ShowAThread extends AppCompatActivity {
                 currentWord = searchResult.get(now - 1);
                 adapter.wrap(currentWord);
             }
-            int position = searchResult.get(now - 1).outPosition;
-            LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-            if (layoutManager != null) {
-                View itemView = layoutManager.findViewByPosition(position);
-                if (itemView == null) {
-                    Log.d("ShowAThread", "itemView is null");
-                    if (position >= 2) {
-                        layoutManager.scrollToPosition(position - 2);
-                    } else if (searchResult.size() - position >= 3) {
-                        layoutManager.scrollToPosition(position + 2);
+        });
+        Classes.Word word = searchResult.get(now - 1);
+        int position = word.outPosition;
+        LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+        if (layoutManager != null) {
+            View itemView = layoutManager.findViewByPosition(position);
+            if (itemView == null) {
+                Log.d("ShowAThread", "itemView is null");
+                runOnUiThread(() -> recyclerView.scrollToPosition(position));
+            }
+            int RETRY_COUNT = 60;
+            while (RETRY_COUNT > 0) {
+                RETRY_COUNT--;
+                itemView = layoutManager.findViewByPosition(position);
+                if (itemView != null) {
+                    TextView textView = itemView.findViewById(R.id.content_unit);
+                    Layout layout = textView.getLayout();
+                    int startIndex = word.idx;
+                    int line = layout.getLineForOffset(startIndex);
+                    int baseline = layout.getLineBaseline(line);
+                    int topline = layout.getLineForOffset(0);
+                    int offset = baseline - topline;
+                    Log.d("ShowAThread", "line: " + line + ", baseline: " + baseline + ", topline: " + topline + ", offset: " + offset);
+                    runOnUiThread(() -> smoothScrollToPositionWithOffset(recyclerView, position, -offset + 100));
+                } else {
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                        Log.e("ShowAThread", "updateUI", e);
                     }
                 }
             }
-            smoothScrollToPositionWithOffset(recyclerView, position, 0);
-        });
+        }
     }
+
 
     private void smoothScrollToPositionWithOffset(RecyclerView recyclerView, int position, int offset) {
         LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
@@ -366,22 +420,32 @@ public class ShowAThread extends AppCompatActivity {
                     .setNegativeButton("取消", (dialog, which) -> dialog.cancel())
                     .show();
         } else if (item.getItemId() == 4) {
+            if (nowProcess == null) {
+                nowProcess = new JsonObject();
+            }
             if (!onlyPo) {
-                nowProcess = getCurrentPosition();
+                updateProcess("out", getCurrentPosition());
+                updateProcess("inner", getCurrentOffset());
                 adapter.onlyPo();
                 onlyPo = true;
                 LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                 if (layoutManager != null) {
-                    layoutManager.scrollToPositionWithOffset(0, 0);
+                    layoutManager.scrollToPositionWithOffset(
+                            getProcessValue("out_po", 0),
+                            getProcessValue("inner_po", 0)
+                    );
                 }
             } else {
+                updateProcess("out_po", getCurrentPosition());
+                updateProcess("inner_po", getCurrentOffset());
                 adapter.unOnlyPo();
                 onlyPo = false;
-                if(nowProcess != null) {
-                    LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                    if (layoutManager != null) {
-                        layoutManager.scrollToPositionWithOffset(nowProcess, 0);
-                    }
+                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (layoutManager != null) {
+                    layoutManager.scrollToPositionWithOffset(
+                            getProcessValue("out", 0),
+                            getProcessValue("inner", 0)
+                    );
                 }
             }
         } else if (item.getItemId() == 5) {
@@ -403,11 +467,29 @@ public class ShowAThread extends AppCompatActivity {
             }
             Functions.PutFile(this, SaveThread.SAVED_THREADS_FILE, new Gson().toJson(threads));
             String message = "THREAD_DELETED_" + tag;
-            Log.i("ShowAThread", "Posted message: " + message);
+            Log.d("ShowAThread", "Posted message: " + message);
             EventBus.getDefault().post(new EventMessage(1, message));
             finish();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private int getProcessValue(String key, int defaultValue) {
+        try {
+            if (nowProcess.has(key)) {
+                return nowProcess.get(key).getAsInt();
+            }
+        } catch (Exception e) {
+            Log.e("ShowAThread", "onOptionsItemSelected", e);
+        }
+        return defaultValue;
+    }
+
+    private void updateProcess(String key, int value) {
+        if (nowProcess.has(key)) {
+            nowProcess.remove(key);
+        }
+        nowProcess.addProperty(key, value);
     }
 
     private void handleInputText(String inputText) {
@@ -504,7 +586,7 @@ public class ShowAThread extends AppCompatActivity {
             int count = 0;
             while ((idx = content.indexOf(word, idx)) != -1) {
                 count++;
-                searchResult.add(new Classes.Word(word, i, count));
+                searchResult.add(new Classes.Word(word, i, count, idx));
                 idx += word.length();
             }
         }

@@ -154,7 +154,7 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
                 String id;
                 if (matchedText.startsWith(">>No.")) {
                     id = matchedText.substring(5);
-                    Log.i("onClick", "点击了 >>No." + id);
+                    Log.d("onClick", "点击了 >>No." + id);
                     if (ShowAThread.replyMap.containsKey(id) && ShowAThread.replyMap.get(id) != null) {
                         showReplyDialog(Objects.requireNonNull(ShowAThread.replyMap.get(id)));
                     } else {
@@ -163,7 +163,7 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
                     }
                 } else if (matchedText.startsWith(">>")) {
                     id = matchedText.substring(2);
-                    Log.i("onClick", "点击了 >>" + id);
+                    Log.d("onClick", "点击了 >>" + id);
                     if (ShowAThread.replyMap.containsKey(id) && ShowAThread.replyMap.get(id) != null) {
                         showReplyDialog(Objects.requireNonNull(ShowAThread.replyMap.get(id)));
                     } else {

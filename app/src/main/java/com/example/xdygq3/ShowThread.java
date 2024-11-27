@@ -84,8 +84,8 @@ public class ShowThread extends AppCompatActivity {
             finish();
             return;
         }
-        Log.i("ShowThread", "contactList size: " + contactList.size());
-        Log.i("ShowThread", "contactList: " + contactList);
+        Log.d("ShowThread", "contactList size: " + contactList.size());
+        Log.d("ShowThread", "contactList: " + contactList);
         contactAdapter = new ContactAdapter(contactList);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
@@ -118,7 +118,7 @@ public class ShowThread extends AppCompatActivity {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onMessageEvent(EventMessage message) {
         String title = message.getMessage();
-        Log.i("ShowThread", "Received message: " + title);
+        Log.d("ShowThread", "Received message: " + title);
         String tag = parseThreadId(title, "THREAD_DELETED");
         if (!title.equals(tag)) {
             contactAdapter.deleteId(tag);
