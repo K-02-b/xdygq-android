@@ -36,6 +36,9 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 
+/**
+ * @noinspection unused
+ */
 public class ReplyViewHolder extends RecyclerView.ViewHolder {
     private final TextView titleView;
     private final TextView nameView;
@@ -59,6 +62,24 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
         idView = itemView.findViewById(R.id.id_unit);
         context = itemView.getContext();
         clipboardManager = (ClipboardManager) itemView.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+    }
+
+    private static @NonNull String getVisibilityString(int visibility) {
+        String visibilityString;
+        switch (visibility) {
+            case View.VISIBLE:
+                visibilityString = "VISIBLE";
+                break;
+            case View.INVISIBLE:
+                visibilityString = "INVISIBLE";
+                break;
+            case View.GONE:
+                visibilityString = "GONE";
+                break;
+            default:
+                visibilityString = "default";
+        }
+        return visibilityString;
     }
 
     public void bind(Reply reply) {
@@ -126,24 +147,6 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
             copy(Id, "串号");
             return true;
         });
-    }
-
-    private static @NonNull String getVisibilityString(int visibility) {
-        String visibilityString;
-        switch (visibility) {
-            case View.VISIBLE:
-                visibilityString = "VISIBLE";
-                break;
-            case View.INVISIBLE:
-                visibilityString = "INVISIBLE";
-                break;
-            case View.GONE:
-                visibilityString = "GONE";
-                break;
-            default:
-                visibilityString = "default";
-        }
-        return visibilityString;
     }
 
     private @NonNull ClickableSpan getClickableSpan(Matcher matcher) {
@@ -349,6 +352,7 @@ public class ReplyViewHolder extends RecyclerView.ViewHolder {
 
     public interface OnFetchPostCallback {
         void onFetchSuccess(Reply reply);
+
         void onFetchFailure(String errorMessage);
     }
 }

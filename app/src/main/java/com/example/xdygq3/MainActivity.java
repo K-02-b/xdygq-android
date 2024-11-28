@@ -76,10 +76,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import okhttp3.Response;
 
+/**
+ * @noinspection deprecation
+ */
 public class MainActivity extends AppCompatActivity {
 
     protected final static int REQUEST_CODE_NOTIFICATION_PERMISSION = 100;
@@ -187,14 +188,6 @@ public class MainActivity extends AppCompatActivity {
         scheduler.schedule(jobInfo);
     };
 
-//    @RequiresApi(api = Build.VERSION_CODES.M)
-//    private void requestBatteryOptimize() {
-//        hint("请开启忽略电池优化（可选）", Toast.LENGTH_LONG);
-//        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-//        intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
-//        startActivityForResult(intent, REQUEST_CODE_IGNORE_BATTERY_OPTIMIZATIONS);
-//    }
-
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
         super.onNewIntent(intent);
@@ -215,14 +208,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        try {
-            if(thread != null && thread.isAlive()) {
-                thread.interrupt();
-                thread = null;
-            }
-        } catch (Exception e) {
-            Log.e("MainActivity", "线程错误", e);
-        }
         try {
             setContentView(R.layout.activity_main);
             setToolbar();
@@ -253,11 +238,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            if (!isBatteryOptimizeStatus()){
-//                requestBatteryOptimize();
-//            }
-//        }
         try {
             BottomNavigationView bottomNavigationView = findViewById(R.id.bottomView_main);
             bottomNavigationView.getMenu().findItem(R.id.navigation_item1).setChecked(true);
@@ -292,15 +272,17 @@ public class MainActivity extends AppCompatActivity {
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                    // 尚未获得通知权限，请求权限
                     ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_CODE_NOTIFICATION_PERMISSION);
-                    return; // 等待权限请求结果
+                    return;
                 }
             }
         } catch (Exception e) {
             Log.e("MainActivity", "通知管理器错误", e);
         }
         try {
+            if (thread != null && thread.isAlive()) {
+                thread.interrupt();
+            }
             thread = new Thread(task);
             thread.start();
         } catch (Exception e) {
@@ -479,15 +461,8 @@ public class MainActivity extends AppCompatActivity {
     private void fetchPostData(Classes.Post post) throws InterruptedException {
         String api = post.OnlyPo ? "https://api.nmb.best/api/po/page/337845818/id/" : "https://api.nmb.best/api/thread/page/337845818/id/";
         String url = api + post.Id;
-        OkHttpClient client = new OkHttpClient.Builder()
-                .sslSocketFactory(shareData.getSSLContext().getSocketFactory(), shareData.trustAllCerts)
-                .build();
-        Request request = new Request.Builder()
-                .url(url)
-                .header("Cookie", "userhash=" + UserHash)
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
+        Call call = Functions.buildCall(url, "userhash=" + UserHash);
+        call.enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 handleRequestFailure(e);

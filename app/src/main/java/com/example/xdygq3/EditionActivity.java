@@ -1,7 +1,6 @@
 package com.example.xdygq3;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -49,7 +48,7 @@ public class EditionActivity extends AppCompatActivity {
                 tableRow.setLayoutParams(new TableRow.LayoutParams(
                         TableRow.LayoutParams.MATCH_PARENT,
                         TableRow.LayoutParams.WRAP_CONTENT));
-                Functions.addEditRow(context, tableRow, new Classes.Compat[]{new Classes.Compat(Integer.toString(item.Id), View.generateViewId(), "id"), new Classes.Compat(item.Mark, View.generateViewId(), "mark")});
+                Functions.addEditRow(context, tableRow, new Classes.Compat[]{new Classes.Compat(Integer.toString(item.Id), View.generateViewId(), "id", shareData.getConfig().textSize, 80), new Classes.Compat(item.Mark, View.generateViewId(), "mark", shareData.getConfig().textSize, 80)});
                 Counts.put(item.Id, new Classes.Count(item.ReplyCount, item.NewCount));
                 TableRow.LayoutParams layoutParams = new TableRow.LayoutParams(
                         TableRow.LayoutParams.WRAP_CONTENT,
@@ -126,8 +125,8 @@ public class EditionActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, 0, 0, Functions.menuIconWithText(AppCompatResources.getDrawable(this, R.drawable.add), "添加")).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-        menu.add(0, 1, 1, Functions.menuIconWithText(AppCompatResources.getDrawable(this, R.drawable.save), "保存")).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menu.add(0, 0, 0, Functions.menuIconWithText(Objects.requireNonNull(AppCompatResources.getDrawable(this, R.drawable.add)), "添加")).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menu.add(0, 1, 1, Functions.menuIconWithText(Objects.requireNonNull(AppCompatResources.getDrawable(this, R.drawable.save)), "保存")).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -137,7 +136,7 @@ public class EditionActivity extends AppCompatActivity {
             case 0:
                 TableLayout tableLayout = findViewById(R.id.TableLayout2);
                 TableRow tableRow = new TableRow(context);
-                Functions.addEditRow(context, tableRow, new Classes.Compat[]{new Classes.Compat("60000000", View.generateViewId(), "id", shareData.getConfig().textSize, 80), new Classes.Compat("新串", View.generateViewId(), "mark", shareData.getConfig().textSize, 120)});
+                Functions.addEditRow(context, tableRow, new Classes.Compat[]{new Classes.Compat("60000000", View.generateViewId(), "id", shareData.getConfig().textSize, 80), new Classes.Compat("新串", View.generateViewId(), "mark", shareData.getConfig().textSize, 80)});
                 TableRow.LayoutParams layoutParams = new TableRow.LayoutParams(
                         TableRow.LayoutParams.WRAP_CONTENT,
                         TableRow.LayoutParams.WRAP_CONTENT);

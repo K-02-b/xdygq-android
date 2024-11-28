@@ -1,7 +1,6 @@
 package com.example.xdygq3;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -42,6 +41,7 @@ public class AboutActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomView_about);
         bottomNavigationView.getMenu().findItem(R.id.navigation_item3).setChecked(true);
+        //noinspection deprecation
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
             int action = shareData.getActionFromItemId(item.getItemId());
             switch (action) {

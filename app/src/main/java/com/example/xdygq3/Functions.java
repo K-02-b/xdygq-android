@@ -18,6 +18,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 
 public class Functions {
 
@@ -62,9 +67,9 @@ public class Functions {
         File file = new File(context.getFilesDir(), filename);
         try (FileInputStream fis = new FileInputStream(file);
              FileChannel fileChannel = fis.getChannel();
-             FileLock lock = fileChannel.lock(0, Long.MAX_VALUE, true)) { // 读取锁
+             FileLock ignored = fileChannel.lock(0, Long.MAX_VALUE, true)) { // 读取锁
             byte[] data = new byte[fis.available()];
-            fis.read(data);
+            int ignored1 = fis.read(data);
             Log.d("getFile", "Getting file: " + filename);
             Log.d("getFile", "Content: " + new String(data));
             return new String(data);
@@ -99,7 +104,7 @@ public class Functions {
         File file = new File(context.getFilesDir(), filename);
         try (FileInputStream fis = new FileInputStream(file);
              FileChannel fileChannel = fis.getChannel();
-             FileLock lock = fileChannel.lock(0, Long.MAX_VALUE, true)) {
+             FileLock ignored = fileChannel.lock(0, Long.MAX_VALUE, true)) {
             Log.d("checkFileExists", "Got file: " + filename);
             return true;
         } catch (FileNotFoundException e) {
@@ -112,12 +117,26 @@ public class Functions {
         }
     }
 
+    public static Call buildCall(String url, String cookie) {
+        OkHttpClient client = new OkHttpClient.Builder()
+                .sslSocketFactory(shareData.getSSLContext().getSocketFactory(), shareData.trustAllCerts)
+                .callTimeout(shareData.getConfig().callTimeout, TimeUnit.MILLISECONDS)
+                .connectTimeout(shareData.getConfig().connectTimeout, TimeUnit.MILLISECONDS)
+                .readTimeout(shareData.getConfig().readTimeout, TimeUnit.MILLISECONDS)
+                .build();
+        Request request = new Request.Builder()
+                .url(url)
+                .header("Cookie", cookie)
+                .build();
+        return client.newCall(request);
+    }
+
 
     private static void createEmptyFile(Context context, String filename) {
         File file = new File(context.getFilesDir(), filename);
         try (FileOutputStream fos = new FileOutputStream(file);
              FileChannel fileChannel = fos.getChannel();
-             FileLock lock = fileChannel.lock()) { // 写入锁
+             FileLock ignored1 = fileChannel.lock()) { // 写入锁
             fos.write("".getBytes());
         } catch (IOException e) {
             Log.e("createEmptyFile", "Error creating empty file: " + filename, e);
@@ -127,48 +146,35 @@ public class Functions {
     public static void PutFile(Context context, String filename, String content) {
         Log.d("PutFile", "Putting file: " + filename);
         Log.d("PutFile", "Content: " + content);
+        FileOutputStream fos;
         FileChannel channel = null;
         FileLock lock = null;
         try {
-            FileOutputStream fos = context.openFileOutput(filename, Context.MODE_PRIVATE);
+            fos = context.openFileOutput(filename, Context.MODE_PRIVATE);
             channel = fos.getChannel();
-            lock = channel.lock(); // 获取独占锁
+            lock = channel.lock();
             fos.write(content.getBytes());
         } catch (IOException e) {
-            // 记录具体的IO异常
             Log.e("PutFile", "Error writing to file: " + filename, e);
         } catch (Exception e) {
-            // 记录其他类型的异常
             Log.e("PutFile", "Unexpected error while writing to file: " + filename, e);
         } finally {
             if (lock != null) {
                 try {
-                    lock.release(); // 释放锁
+                    lock.release();
                 } catch (IOException e) {
                     Log.e("PutFile", "Error releasing file lock: " + filename, e);
                 }
             }
             if (channel != null) {
                 try {
-                    channel.close(); // 关闭文件通道
+                    channel.close();
                 } catch (IOException e) {
                     Log.e("PutFile", "Error closing file channel: " + filename, e);
                 }
             }
         }
     }
-
-//    public static boolean checkFileExists(Context context, String fileName) {
-//        try {
-//            // 尝试打开文件
-//            context.openFileInput(fileName);
-////            Log.d("FileCheck", "文件存在：" + fileName);
-//            return true;
-//        } catch (FileNotFoundException e) {
-////            Log.d("FileCheck", "文件不存在：" + fileName);
-//            return false;
-//        }
-//    }
 
     public static CharSequence menuIconWithText(Drawable r, String title) {
         r.setBounds(0, 0, r.getIntrinsicWidth(), r.getIntrinsicHeight());

@@ -1,9 +1,6 @@
 package com.example.xdygq3;
 
-import android.graphics.Color;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.style.ForegroundColorSpan;
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,8 +14,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
-    private List<Reply> replies;
     private final List<Reply> unfilteredReplies;
+    private List<Reply> replies;
 
     public ReplyAdapter(List<Reply> newReplies) {
         replies = new ArrayList<>(newReplies);
@@ -45,11 +42,13 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
         notifyItemInserted(position);
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void clearAll() {
         replies.clear();
         notifyDataSetChanged();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void setReplies(List<Reply> replies) {
         this.replies = new ArrayList<>(replies);
         notifyDataSetChanged();
@@ -78,7 +77,7 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
     }
 
     public void wrap(Classes.Word word) {
-        if(word != null) {
+        if (word != null) {
             String content = replies.get(word.outPosition).getContent();
             String regex = "<!--begin-tag-->(.*?)<!--end-tag-->";
             Pattern pattern = Pattern.compile(regex);
@@ -95,7 +94,7 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
             sb = new StringBuffer();
             while (matcher.find()) {
                 count++;
-                if(count == word.position) {
+                if (count == word.position) {
                     matcher.appendReplacement(sb, wrapTag("<font color=\"red\">") + matcher.group() + wrapTag("</font>"));
                 } else {
                     matcher.appendReplacement(sb, wrapTag("<font color=\"#ADD8E6\">") + matcher.group() + wrapTag("</font>"));
@@ -109,7 +108,7 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
     }
 
     public void unWrap(Classes.Word word) {
-        if(word != null) {
+        if (word != null) {
             String content = replies.get(word.outPosition).getContent();
             String regex = wrapTag("(.*?)");
             Pattern pattern = Pattern.compile(regex);
@@ -129,7 +128,7 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
     public void unWrap() {
         for (int i = 0; i < replies.size(); i++) {
             String content = replies.get(i).getContent();
-            if(content.contains("<!--begin-tag-->") && content.contains("<!--end-tag-->")) {
+            if (content.contains("<!--begin-tag-->") && content.contains("<!--end-tag-->")) {
                 String regex = wrapTag("(.*?)");
                 Pattern pattern = Pattern.compile(regex);
                 Matcher matcher = pattern.matcher(content);
@@ -145,10 +144,11 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void onlyPo() {
         List<Reply> temp = new ArrayList<>();
         for (int i = 0; i < replies.size(); i++) {
-            if(replies.get(i).is_po()) {
+            if (replies.get(i).is_po()) {
                 temp.add(replies.get(i));
             }
         }
@@ -156,6 +156,7 @@ public class ReplyAdapter extends RecyclerView.Adapter<ReplyViewHolder> {
         notifyDataSetChanged();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void unOnlyPo() {
         replies = new ArrayList<>(unfilteredReplies);
         notifyDataSetChanged();

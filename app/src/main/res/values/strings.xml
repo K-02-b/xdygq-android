@@ -9,7 +9,7 @@
     <string name="String_thread">串号</string>
     <string name="PleaseInputThreadNumber">请输入串号：</string>
     <string name="result_count_format">%d / %d</string>
-    <string name="page_count_format">共 %d 页</string>
+    <string name="page_count_format">第 %d / %d 页</string>
 
 
 </resources>

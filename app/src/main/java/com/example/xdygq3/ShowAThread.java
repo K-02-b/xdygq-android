@@ -59,6 +59,9 @@ public class ShowAThread extends AppCompatActivity {
     private String tag;
     private String searchWord;
     private Classes.Word currentWord;
+    /**
+     * @noinspection FieldCanBeLocal, MismatchedQueryAndUpdateOfCollection
+     */
     private ArrayList<Integer> uniqueSearchResult;
     private JsonObject nowProcess;
 
@@ -79,7 +82,11 @@ public class ShowAThread extends AppCompatActivity {
         });
 
         tag = Functions.getFile(this, "currentTag.txt");
-        poCookie = null;
+        if (tag.isEmpty()) {
+            runOnUiThread(() -> Toast.makeText(this, "数据传输错误", Toast.LENGTH_SHORT).show());
+            finish();
+            return;
+        }
 
         recyclerView = findViewById(R.id.RecyclerTools);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -87,111 +94,179 @@ public class ShowAThread extends AppCompatActivity {
 
         recyclerView.addItemDecoration(dividerItemDecoration);
 
-        new Thread(this::drawUI).start();
+        poCookie = null;
         changed = false;
         onlyPo = false;
         now = 0;
         lastNow = 0;
 
-        EditText input = findViewById(R.id.search_text);
-        resultCount = findViewById(R.id.result_counter);
-        input.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+        Toast.makeText(this, "正在加载数据……", Toast.LENGTH_SHORT).show();
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                changed = true;
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                changed = true;
-            }
-        });
-        ImageButton upButton = findViewById(R.id.search_button_up);
-        upButton.setOnClickListener(v -> {
-            lastNow = now;
-            if (changed) {
-                String word = input.getText().toString();
-                searchWord = word;
-                currentWord = null;
-                runOnUiThread(() -> adapter.unWrap());
-                search(word);
-                if (searchResult.isEmpty()) {
-                    runOnUiThread(() -> Toast.makeText(this, "没有找到内容", Toast.LENGTH_SHORT).show());
-                    return;
-                }
-                now = 1;
-                changed = false;
-                runOnUiThread(() -> adapter.wrap(word));
-            } else {
-                if (now > 1) {
-                    --now;
-                } else {
-                    now = searchResult.size();
-                }
-            }
-            new Thread(this::updateUI).start();
-        });
-        ImageButton downButton = findViewById(R.id.search_button_down);
-        downButton.setOnClickListener(v -> {
-            lastNow = now;
-            if (changed) {
-                String word = input.getText().toString();
-                searchWord = word;
-                currentWord = null;
-                runOnUiThread(() -> adapter.unWrap());
-                search(word);
-                if (searchResult.isEmpty()) {
-                    runOnUiThread(() -> Toast.makeText(this, "没有找到内容", Toast.LENGTH_SHORT).show());
-                    return;
-                }
-                now = searchResult.size();
-                changed = false;
-                runOnUiThread(() -> adapter.wrap(word));
-            } else {
-                if (now < searchResult.size()) {
-                    ++now;
-                } else {
-                    now = 1;
-                }
-            }
-            new Thread(this::updateUI).start();
-        });
-        nowProcess = new JsonObject();
+        replies = new ArrayList<>();
+        int i = 0;
+        String filePath = SaveThread.FILE_PREFIX + tag + "_" + i + ".json";
+        String content = "";
+        boolean fileExists;
         try {
+            fileExists = Functions.checkFileExists(this, filePath);
+            if (fileExists) {
+                content = Functions.getFile(this, filePath);
+            }
+            while (!fileExists || content.isEmpty()) {
+                if(i >= 10) {
+                    break;
+                }
+                i++;
+                filePath = SaveThread.FILE_PREFIX + tag + "_" + i + ".json";
+                fileExists = Functions.checkFileExists(this, filePath);
+                if (fileExists) {
+                    content = Functions.getFile(this, filePath);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("SaveThread", "onCreate", e);
+        }
+        if (!content.isEmpty()) {
+            try {
+                JsonArray jsonArray = new Gson().fromJson(content, JsonArray.class);
+                for (JsonElement jsonElement : jsonArray) {
+                    if (jsonElement.isJsonObject()) {
+                        JsonObject jsonObject = jsonElement.getAsJsonObject();
+                        String cookie = jsonObject.get("cookie").getAsString();
+                        if (poCookie == null) {
+                            poCookie = cookie;
+                        }
+                        replies.add(new Reply(
+                                jsonObject.get("title").getAsString(),
+                                jsonObject.get("name").getAsString(),
+                                cookie,
+                                Objects.equals(cookie, poCookie),
+                                jsonObject.get("content").getAsString(),
+                                jsonObject.get("timestamp").getAsString(),
+                                jsonObject.get("id").getAsString()
+                        ));
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("SaveThread", "onCreate", e);
+            }
+        }
+        adapter = new ReplyAdapter(replies);
+        recyclerView.setAdapter(adapter);
+
+        new Thread(this::drawUI).start();
+    }
+
+    private void drawUI() {
+        try {
+            EditText input = findViewById(R.id.search_text);
+            resultCount = findViewById(R.id.result_counter);
+            input.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    changed = true;
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    changed = true;
+                }
+            });
+            ImageButton upButton = findViewById(R.id.search_button_up);
+            upButton.setOnClickListener(v -> {
+                lastNow = now;
+                if (changed) {
+                    String word = input.getText().toString();
+                    searchWord = word;
+                    currentWord = null;
+                    runOnUiThread(() -> adapter.unWrap());
+                    search(word);
+                    if (searchResult.isEmpty()) {
+                        runOnUiThread(() -> Toast.makeText(this, "没有找到内容", Toast.LENGTH_SHORT).show());
+                        return;
+                    }
+                    now = 1;
+                    changed = false;
+                    runOnUiThread(() -> adapter.wrap(word));
+                } else {
+                    if (now > 1) {
+                        --now;
+                    } else {
+                        now = searchResult.size();
+                    }
+                }
+                new Thread(this::updateUI).start();
+            });
+            ImageButton downButton = findViewById(R.id.search_button_down);
+            downButton.setOnClickListener(v -> {
+                lastNow = now;
+                if (changed) {
+                    String word = input.getText().toString();
+                    searchWord = word;
+                    currentWord = null;
+                    runOnUiThread(() -> adapter.unWrap());
+                    search(word);
+                    if (searchResult.isEmpty()) {
+                        runOnUiThread(() -> Toast.makeText(this, "没有找到内容", Toast.LENGTH_SHORT).show());
+                        return;
+                    }
+                    now = searchResult.size();
+                    changed = false;
+                    runOnUiThread(() -> adapter.wrap(word));
+                } else {
+                    if (now < searchResult.size()) {
+                        ++now;
+                    } else {
+                        now = 1;
+                    }
+                }
+                new Thread(this::updateUI).start();
+            });
+        } catch (Exception e) {
+            Log.e("ShowAThread", "Error: " + e);
+        }
+        try {
+            replies = readAndMergeReplies(tag);
+            for (Reply reply : replies) {
+                replyMap.put(reply.getId(), reply);
+            }
+            adapter = new ReplyAdapter(replies);
+            runOnUiThread(() -> recyclerView.setAdapter(adapter));
+        } catch (Exception e) {
+            Log.e("ShowAThread", "onCreate", e);
+        }
+        try {
+            nowProcess = new JsonObject();
             if (Functions.checkFileExists(this, tag + "_process.json")) {
                 String process = Functions.getFile(this, tag + "_process.json");
                 nowProcess = new Gson().fromJson(process, JsonObject.class);
                 if (nowProcess == null) {
                     nowProcess = new JsonObject();
                 }
-                int out = 0, inner = 0;
+                int out, inner;
                 if (nowProcess.has("out")) {
                     out = nowProcess.get("out").getAsInt();
+                } else {
+                    out = 0;
                 }
                 if (nowProcess.has("inner")) {
                     inner = nowProcess.get("inner").getAsInt();
+                } else {
+                    inner = 0;
                 }
                 LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                 if (layoutManager != null) {
-                    layoutManager.scrollToPositionWithOffset(out, inner);
+                    runOnUiThread(() -> layoutManager.scrollToPositionWithOffset(out, inner));
                 }
             }
         } catch (Exception e) {
             Log.e("ShowAThread", "onCreate", e);
         }
-    }
-
-    private void drawUI() {
-        replies = readAndMergeReplies(tag);
-        for (Reply reply : replies) {
-            replyMap.put(reply.getId(), reply);
-        }
-        adapter = new ReplyAdapter(replies);
-        runOnUiThread(() -> recyclerView.setAdapter(adapter));
+        runOnUiThread(() -> Toast.makeText(this, "加载完成，跳转到上次保存的位置", Toast.LENGTH_SHORT).show());
     }
 
     private int getCurrentPosition() {
@@ -228,7 +303,7 @@ public class ShowAThread extends AppCompatActivity {
     }
 
     private void save_process() {
-        if(onlyPo) {
+        if (onlyPo) {
             updateProcess("out_po", getCurrentPosition());
             updateProcess("inner_po", getCurrentOffset());
         } else {
@@ -393,14 +468,34 @@ public class ShowAThread extends AppCompatActivity {
                 Field mAlert = AlertDialog.class.getDeclaredField("mAlert");
                 mAlert.setAccessible(true);
                 Object mAlertController = mAlert.get(dialog);
-                Field mTitle = mAlertController.getClass().getDeclaredField("mTitleView");
-                mTitle.setAccessible(true);
-                TextView mTitleView = (TextView) mTitle.get(mAlertController);
-                mTitleView.setTextSize(textSize + 4);
-                Field mMessage = mAlertController.getClass().getDeclaredField("mMessageView");
-                mMessage.setAccessible(true);
-                TextView mMessageView = (TextView) mMessage.get(mAlertController);
-                mMessageView.setTextSize(textSize);
+                Field mTitle = null;
+                if (mAlertController != null) {
+                    mTitle = mAlertController.getClass().getDeclaredField("mTitleView");
+                }
+                if (mTitle != null) {
+                    mTitle.setAccessible(true);
+                }
+                TextView mTitleView = null;
+                if (mTitle != null) {
+                    mTitleView = (TextView) mTitle.get(mAlertController);
+                }
+                if (mTitleView != null) {
+                    mTitleView.setTextSize(textSize + 4);
+                }
+                Field mMessage = null;
+                if (mAlertController != null) {
+                    mMessage = mAlertController.getClass().getDeclaredField("mMessageView");
+                }
+                if (mMessage != null) {
+                    mMessage.setAccessible(true);
+                }
+                TextView mMessageView = null;
+                if (mMessage != null) {
+                    mMessageView = (TextView) mMessage.get(mAlertController);
+                }
+                if (mMessageView != null) {
+                    mMessageView.setTextSize(textSize);
+                }
             } catch (Exception e) {
                 Log.e("ShowAThread", "onOptionsItemSelected", e);
             }
@@ -431,8 +526,8 @@ public class ShowAThread extends AppCompatActivity {
                 LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                 if (layoutManager != null) {
                     layoutManager.scrollToPositionWithOffset(
-                            getProcessValue("out_po", 0),
-                            getProcessValue("inner_po", 0)
+                            getProcessValue("out_po"),
+                            getProcessValue("inner_po")
                     );
                 }
             } else {
@@ -443,8 +538,8 @@ public class ShowAThread extends AppCompatActivity {
                 LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                 if (layoutManager != null) {
                     layoutManager.scrollToPositionWithOffset(
-                            getProcessValue("out", 0),
-                            getProcessValue("inner", 0)
+                            getProcessValue("out"),
+                            getProcessValue("inner")
                     );
                 }
             }
@@ -474,6 +569,13 @@ public class ShowAThread extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private int getProcessValue(String key) {
+        return getProcessValue(key, 0);
+    }
+
+    /**
+     * @noinspection SameParameterValue
+     */
     private int getProcessValue(String key, int defaultValue) {
         try {
             if (nowProcess.has(key)) {
@@ -520,9 +622,9 @@ public class ShowAThread extends AppCompatActivity {
         View dialogView = inflater.inflate(layout_id, null);
         LinearLayout linearLayout = (LinearLayout) dialogView;
         EditText input = null;
-        TextView pageCountText = dialogView.findViewById(R.id.page_count_text); // 获取TextView
-        int totalPages = calculateTotalPages(); // 计算总页数
-        pageCountText.setText(getString(R.string.page_count_format, totalPages)); // 使用资源字符串设置TextView文本
+        TextView pageCountText = dialogView.findViewById(R.id.page_count_text);
+        int totalPages = calculateTotalPages(), currentPage = calculateNowPages();
+        pageCountText.setText(getString(R.string.page_count_format, currentPage, totalPages));
 
         int childCount = linearLayout.getChildCount();
         for (int i = 0; i < childCount; i++) {
@@ -561,10 +663,17 @@ public class ShowAThread extends AppCompatActivity {
         return (int) Math.ceil((double) totalItems / itemsPerPage);
     }
 
+    private int calculateNowPages() {
+        LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+        if (layoutManager != null) {
+            return (int) Math.ceil((double) layoutManager.findLastVisibleItemPosition() / 19);
+        }
+        return 0;
+    }
+
     private void handleInputNumber(int number) {
         int position = 19 * (number - 1);
         if (recyclerView != null && adapter != null && position >= 0 && position < adapter.getItemCount()) {
-//            recyclerView.smoothScrollToPosition(position);
             recyclerView.scrollToPosition(position);
         } else {
             Toast.makeText(this, "输入的数字无效或超出范围", Toast.LENGTH_SHORT).show();

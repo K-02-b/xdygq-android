@@ -1,5 +1,10 @@
 package com.example.xdygq3;
 
+import androidx.annotation.NonNull;
+
+/**
+ * @noinspection unused
+ */
 public class EventMessage {
 
     private int type;
@@ -10,9 +15,9 @@ public class EventMessage {
         this.message = message;
     }
 
+    @NonNull
     @Override
     public String toString() {
-
         return "type=" + type + "--message= " + message;
     }
 

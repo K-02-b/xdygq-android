@@ -46,7 +46,7 @@
                 android:inputType="number"
                 android:maxWidth="100dp"
                 android:minWidth="100dp"
-                android:text="6000000" />
+                android:text="60000000" />
 
         </LinearLayout>
 

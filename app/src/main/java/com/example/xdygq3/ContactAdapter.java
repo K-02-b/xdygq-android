@@ -20,7 +20,7 @@ import java.util.Objects;
 
 public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactViewHolder> {
 
-    private List<Contact> contactList;
+    private final List<Contact> contactList;
 
     public ContactAdapter(List<Contact> contactList) {
         this.contactList = contactList;
@@ -97,7 +97,7 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactV
         notifyItemChanged(position);
     }
 
-    static class ContactViewHolder extends RecyclerView.ViewHolder {
+    public static class ContactViewHolder extends RecyclerView.ViewHolder {
         LinearLayout linearLayout;
         ImageView avatar;
         TextView name;

@@ -1,6 +1,5 @@
 package com.example.xdygq3;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -25,6 +24,9 @@ import java.util.Objects;
 
 
 public class ShowThread extends AppCompatActivity {
+    /**
+     * @noinspection FieldCanBeLocal
+     */
     private RecyclerView recyclerView;
     private ContactAdapter contactAdapter;
 
@@ -46,24 +48,12 @@ public class ShowThread extends AppCompatActivity {
         String savedThreads = Functions.getFile(this, "savedThreads.json");
         JsonArray savedThreadsJson = new Gson().fromJson(savedThreads, JsonArray.class);
         if (savedThreadsJson == null) {
-            runOnUiThread(() -> Toast.makeText(this, "你还没有缓存过串哦", Toast.LENGTH_SHORT).show());
+            runOnUiThread(() -> Toast.makeText(this, "你还没有缓存过串", Toast.LENGTH_SHORT).show());
             finish();
             return;
         }
         List<Contact> contactList = new ArrayList<>();
         try {
-//            for (int i = 0; i < savedThreadsJson.size(); i++) {
-//                String Id = savedThreadsJson.get(i).getAsJsonObject().get("id").getAsString();
-//                int j = 1;
-//                String filePath = "saveThread_" + Id + "_" + j + ".json";
-//                String content = Functions.getFile(this, filePath);
-//                while (!content.isEmpty()) {
-//                    contactList.add(new Contact(null, Id + "_" + j, this, ShowAThread.class, "saveThread_" + Id + "_" + j + ".json"));
-//                    j++;
-//                    filePath = "saveThread_" + Id + "_" + j + ".json";
-//                    content = Functions.getFile(this, filePath);
-//                }
-//            }
             for (int i = 0; i < savedThreadsJson.size(); i++) {
                 try {
                     JsonObject jsonObject = savedThreadsJson.get(i).getAsJsonObject();
@@ -134,7 +124,7 @@ public class ShowThread extends AppCompatActivity {
                     for (int i = 0; i < savedThreadsJson.size(); i++) {
                         try {
                             JsonObject jsonObject = savedThreadsJson.get(i).getAsJsonObject();
-                            if(Objects.equals(jsonObject.get("id").getAsString(), finalTag)) {
+                            if (Objects.equals(jsonObject.get("id").getAsString(), finalTag)) {
                                 if (jsonObject.has("mark")) {
                                     mark = jsonObject.get("mark").getAsString();
                                 }

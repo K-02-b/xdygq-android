@@ -1,6 +1,7 @@
 package com.example.xdygq3;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,8 +19,8 @@ import java.util.List;
 
 public class MyAdapter2 extends RecyclerView.Adapter<MyAdapter2.MyViewHolder> {
 
-    private List<tuple> data;
-    private Context context;
+    private final List<tuple> data;
+    private final Context context;
 
     public MyAdapter2(Context context, List<tuple> data) {
         this.context = context;
@@ -61,16 +62,36 @@ public class MyAdapter2 extends RecyclerView.Adapter<MyAdapter2.MyViewHolder> {
                     Field mAlert = AlertDialog.class.getDeclaredField("mAlert");
                     mAlert.setAccessible(true);
                     Object mAlertController = mAlert.get(dialog);
-                    Field mTitle = mAlertController.getClass().getDeclaredField("mTitleView");
-                    mTitle.setAccessible(true);
-                    TextView mTitleView = (TextView) mTitle.get(mAlertController);
-                    mTitleView.setTextSize(textSize + 4);
-                    Field mMessage = mAlertController.getClass().getDeclaredField("mMessageView");
-                    mMessage.setAccessible(true);
-                    TextView mMessageView = (TextView) mMessage.get(mAlertController);
-                    mMessageView.setTextSize(textSize);
+                    Field mTitle = null;
+                    if (mAlertController != null) {
+                        mTitle = mAlertController.getClass().getDeclaredField("mTitleView");
+                    }
+                    if (mTitle != null) {
+                        mTitle.setAccessible(true);
+                    }
+                    TextView mTitleView = null;
+                    if (mTitle != null) {
+                        mTitleView = (TextView) mTitle.get(mAlertController);
+                    }
+                    if (mTitleView != null) {
+                        mTitleView.setTextSize(textSize + 4);
+                    }
+                    Field mMessage = null;
+                    if (mAlertController != null) {
+                        mMessage = mAlertController.getClass().getDeclaredField("mMessageView");
+                    }
+                    if (mMessage != null) {
+                        mMessage.setAccessible(true);
+                    }
+                    TextView mMessageView = null;
+                    if (mMessage != null) {
+                        mMessageView = (TextView) mMessage.get(mAlertController);
+                    }
+                    if (mMessageView != null) {
+                        mMessageView.setTextSize(textSize);
+                    }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("MyAdapter2", "AlertDialog 配置错误", e);
                 }
             });
         }
@@ -84,7 +105,7 @@ public class MyAdapter2 extends RecyclerView.Adapter<MyAdapter2.MyViewHolder> {
     public static class tuple {
         String first;
         String second_1;
-        boolean second_2 = false;
+        boolean second_2;
         String third;
         int CompatFlag;
         boolean hasInformation;

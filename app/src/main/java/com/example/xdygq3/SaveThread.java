@@ -1,7 +1,6 @@
 package com.example.xdygq3;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
@@ -25,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,29 +32,28 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import okhttp3.Response;
 
 public class SaveThread extends AppCompatActivity {
     public static final String SAVED_THREADS_FILE = "savedThreads.json";
     public static final String FILE_PREFIX = "saveThread_";
-    public static final int MAX_RETRIES = 20;
-    public static final int RETRY_INTERVAL = 2000;
+    public static final int MAX_RETRIES = shareData.getConfig().retryTimes;
     private static final String API_URL_PO = "https://api.nmb.best/api/po/id/";
     private static final String API_URL_THREAD = "https://api.nmb.best/api/thread/id/";
+    ConcurrentMap<Integer, CompletableFuture<Void>> futureMap = new ConcurrentHashMap<>();
+    ConcurrentMap<Integer, Integer> retryMap = new ConcurrentHashMap<>();
     private ConcurrentMap<Integer, ArrayList<Reply>> map = new ConcurrentHashMap<>();
     private ConcurrentMap<String, Boolean> map2 = new ConcurrentHashMap<>();
-    private ConcurrentMap<Integer, Integer> map3 = new ConcurrentHashMap<>();
     private JsonArray replies = new JsonArray();
     private int totalPage = 0;
     private int savedPage = -1;
-    private boolean giveUp = false;
     private String poCookie = null;
     private Classes.Post post = null;
     private String filePath = null;
@@ -63,7 +62,6 @@ public class SaveThread extends AppCompatActivity {
      */
     private RecyclerView recyclerView;
     private ReplyAdapter adapter;
-
     Runnable task1 = this::processReplies;
 
     @Override
@@ -117,19 +115,27 @@ public class SaveThread extends AppCompatActivity {
     }
 
     private void onButtonClick(View v) {
+        EditText editText = findViewById(R.id.InputValue);
+        if (editText == null) {
+            Log.e("SaveThread", "onButtonClick: ", new Exception("editText is null"));
+            runOnUiThread(() -> Toast.makeText(this, "视图发生了错误", Toast.LENGTH_SHORT).show());
+            return;
+        }
+        String text = editText.getText().toString();
+        if (!text.matches("\\d{8}")) {
+            runOnUiThread(() -> Toast.makeText(this, "请输入8位数字串号", Toast.LENGTH_SHORT).show());
+            return;
+        }
         runOnUiThread(() -> Toast.makeText(this, "正在获取数据，请等待至成功或报错", Toast.LENGTH_SHORT).show());
         map = new ConcurrentHashMap<>();
         map2 = new ConcurrentHashMap<>();
-        map3 = new ConcurrentHashMap<>();
-        giveUp = false;
+        retryMap = new ConcurrentHashMap<>();
+        futureMap = new ConcurrentHashMap<>();
         savedPage = -1;
         runOnUiThread(adapter::clearAll);
         replies = new JsonArray();
         Classes.Post post = new Classes.Post();
-        EditText editText = findViewById(R.id.InputValue);
-        if (editText != null) {
-            post.Id = Integer.parseInt(editText.getText().toString());
-        }
+        post.Id = Integer.parseInt(text);
         SwitchMaterial switch1 = findViewById(R.id.OnlyPo);
         if (switch1 != null) {
             post.OnlyPo = switch1.isChecked();
@@ -167,18 +173,30 @@ public class SaveThread extends AppCompatActivity {
 
     private void processReplies() {
         for (int i = savedPage == -1 ? 0 : savedPage; i <= totalPage; i++) {
-            if (!waitForData(i)) {
-                runOnUiThread(() -> Toast.makeText(this, "发生错误，进程已强制结束", Toast.LENGTH_LONG).show());
+            futureMap.putIfAbsent(i, new CompletableFuture<>());
+            try {
+                Objects.requireNonNull(futureMap.get(i)).get();
+            } catch (ExecutionException | InterruptedException e) {
+                Log.e("SaveThread", "processReplies", e);
+                try {
+                    //noinspection BusyWait
+                    Thread.sleep(2000);
+                } catch (InterruptedException ex) {
+                    Log.e("SaveThread", "processReplies", ex);
+                }
+                runOnUiThread(() -> Toast.makeText(this, "发生错误，进程已结束", Toast.LENGTH_LONG).show());
                 return;
             }
             ArrayList<Reply> array = map.get(i);
-            assert array != null;
-            if (i >= savedPage) {
-                for (Reply reply : array) {
-//                    Log.d("processReplies", "reply.id: " + reply.getId());
-                    if (!map2.containsKey(reply.getId())) {
-                        replies.add(reply.toJsonObject());
-                        runOnUiThread(() -> adapter.add(reply));
+            if (array == null) {
+                runOnUiThread(() -> Toast.makeText(this, "似乎发生了错误", Toast.LENGTH_LONG).show());
+            } else {
+                if (i >= savedPage) {
+                    for (Reply reply : array) {
+                        if (!map2.containsKey(reply.getId())) {
+                            replies.add(reply.toJsonObject());
+                            runOnUiThread(() -> adapter.add(reply));
+                        }
                     }
                 }
             }
@@ -192,7 +210,6 @@ public class SaveThread extends AppCompatActivity {
         saveRepliesToFile();
         updateSavedThreadsList();
     }
-
 
     public ArrayList<Reply> readAndMergeReplies(String Id) {
         Map<Integer, Reply> uniqueReplies = new HashMap<>();
@@ -234,22 +251,6 @@ public class SaveThread extends AppCompatActivity {
         return sortedReplies;
     }
 
-    private boolean waitForData(int page) {
-        int cnt = 0;
-        while (map.get(page) == null && cnt <= MAX_RETRIES) {
-            if (giveUp) {
-                return false;
-            }
-            try {
-                Thread.sleep(RETRY_INTERVAL);
-            } catch (InterruptedException e) {
-                return false;
-            }
-            ++cnt;
-        }
-        return map.get(page) != null;
-    }
-
     private void saveRepliesToFile() {
         try {
             String jsonString = new Gson().toJson(replies);
@@ -277,7 +278,7 @@ public class SaveThread extends AppCompatActivity {
         String filePath = FILE_PREFIX + postId + "_" + i + ".json";
         while (Boolean.TRUE.equals(Functions.checkFileExists(this, filePath))) {
             i++;
-            filePath = FILE_PREFIX  + postId + "_" + i + ".json";
+            filePath = FILE_PREFIX + postId + "_" + i + ".json";
         }
         return filePath;
     }
@@ -360,18 +361,17 @@ public class SaveThread extends AppCompatActivity {
         String api = post.OnlyPo ? API_URL_PO : API_URL_THREAD;
         String url = api + post.Id + "/page/" + i;
         Log.d("SaveThread", "url: " + url);
-        OkHttpClient client = new OkHttpClient.Builder()
-                .sslSocketFactory(shareData.getSSLContext().getSocketFactory(), shareData.trustAllCerts)
-                .build();
-        Request request = new Request.Builder()
-                .url(url)
-                .header("Cookie", "userhash=" + shareData.getConfig().UserHash)
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
+        Call client = Functions.buildCall(url, "userhash=" + shareData.getConfig().UserHash);
+        futureMap.putIfAbsent(i, new CompletableFuture<>());
+        retryMap.putIfAbsent(i, 0);
+        retryMap.put(i, Objects.requireNonNull(retryMap.get(i)) + 1);
+        client.enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 handleRequestFailure(i, e);
+                if (Objects.requireNonNull(retryMap.get(i)) >= MAX_RETRIES) {
+                    Objects.requireNonNull(futureMap.get(i)).completeExceptionally(e);
+                }
             }
 
             @Override
@@ -383,22 +383,12 @@ public class SaveThread extends AppCompatActivity {
 
     private void handleRequestFailure(Integer i, IOException e) {
         runOnUiThread(() -> Toast.makeText(this, Html.fromHtml("第" + i + "页内容请求失败<br />" + e.getMessage(), Html.FROM_HTML_MODE_COMPACT), Toast.LENGTH_SHORT).show());
-        Log.e("SaveThread", "请求错误", e);
+        Log.e("SaveThread", "handleRequestFailure", e);
         try {
-            map3.putIfAbsent(i, 0);
-            //noinspection DataFlowIssue
-            if (map3.get(i) >= MAX_RETRIES) {
-                runOnUiThread(() -> Toast.makeText(this, "第" + i + "页重试次数过多，放弃", Toast.LENGTH_SHORT).show());
-                giveUp = true;
-                return;
-            }
-            //noinspection DataFlowIssue
-            map3.put(i, map3.get(i) + 1);
             fetchPostData(i);
-        } catch (InterruptedException e2) {
-            Log.e("SaveThread", "fetchPostData", e2);
+        } catch (InterruptedException e1) {
+            Log.e("SaveThread", "fetchPostData", e1);
         }
-        Log.e("SaveThread", "请求错误", e);
     }
 
     private void handleResponse(Integer i, Response response) {
@@ -415,14 +405,35 @@ public class SaveThread extends AppCompatActivity {
         } catch (Exception e) {
             Log.e("SaveThread", "响应错误", e);
             runOnUiThread(() -> Toast.makeText(this, "响应错误", Toast.LENGTH_SHORT).show());
+            Objects.requireNonNull(futureMap.get(i)).completeExceptionally(e);
+            return ;
         }
         try {
             String responseBody = response.body().string();
-//            Log.d("SaveThread", "onResponse: " + responseBody);
-            JsonObject jsonObject = new Gson().fromJson(responseBody, JsonObject.class).getAsJsonObject();
+            Log.d("SaveThread", "responseBody: " + responseBody);
+            JsonObject jsonObject;
+            try {
+                jsonObject = new Gson().fromJson(responseBody, JsonObject.class).getAsJsonObject();
+            } catch (JsonSyntaxException e) {
+                Log.e("SaveThread", "响应错误", e);
+                try {
+                    String message = new Gson().fromJson(responseBody, JsonElement.class).getAsJsonPrimitive().getAsString();
+                    runOnUiThread(() -> Toast.makeText(this, "服务端响应解析失败，已停止缓存：" + message, Toast.LENGTH_SHORT).show());
+                } catch (Exception e1) {
+                    Log.e("SaveThread", "响应错误", e1);
+                    runOnUiThread(() -> Toast.makeText(this, "服务端响应解析错误，已停止缓存", Toast.LENGTH_SHORT).show());
+                }
+                Objects.requireNonNull(futureMap.get(i)).completeExceptionally(e);
+                return;
+            } catch (Exception e) {
+                Log.e("SaveThread", "响应错误", e);
+                runOnUiThread(() -> Toast.makeText(this, "服务端响应解析错误，已停止缓存", Toast.LENGTH_SHORT).show());
+                Objects.requireNonNull(futureMap.get(i)).completeExceptionally(e);
+                return;
+            }
             ArrayList<Reply> array1 = parseReplies(i, jsonObject);
-            Log.d("SaveThread", "array1.size: " + array1.size());
             map.put(i, array1);
+            Objects.requireNonNull(futureMap.get(i)).complete(null);
             if (i == 0) {
                 if (savedPage >= 5) {
                     if (savedPage % 2 == 0) {
@@ -446,15 +457,10 @@ public class SaveThread extends AppCompatActivity {
         runOnUiThread(() -> Toast.makeText(this, Html.fromHtml("第" + page + "页内容请求失败<br />" + "请求过于频繁，将重试", Html.FROM_HTML_MODE_COMPACT), Toast.LENGTH_SHORT).show());
         Log.e("SaveThread", "请求过于频繁，状态码: 429");
         try {
-            map3.putIfAbsent(page, 0);
-            //noinspection DataFlowIssue
-            if (map3.get(page) >= MAX_RETRIES) {
-                runOnUiThread(() -> Toast.makeText(this, "第" + page + "页重试次数过多，放弃", Toast.LENGTH_SHORT).show());
-                giveUp = true;
+            if (Objects.requireNonNull(retryMap.get(page)) >= MAX_RETRIES) {
+                Objects.requireNonNull(futureMap.get(page)).completeExceptionally(new Exception("请求过于频繁，状态码: 429"));
                 return;
             }
-            //noinspection DataFlowIssue
-            map3.put(page, map3.get(page) + 1);
             fetchPostData(page);
         } catch (InterruptedException e) {
             Log.e("SaveThread", "fetchPostData", e);
@@ -475,7 +481,7 @@ public class SaveThread extends AppCompatActivity {
         ArrayList<Reply> array1 = new ArrayList<>();
         if (page == 0) {
             int replyCount = jsonObject.get("ReplyCount").getAsInt();
-            if(replyCount == 0) {
+            if (replyCount == 0) {
                 replyCount = 1;
             }
             totalPage = (int) Math.ceil((double) replyCount / 19);

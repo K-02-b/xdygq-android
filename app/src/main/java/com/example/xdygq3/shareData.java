@@ -1,5 +1,6 @@
 package com.example.xdygq3;
 
+import android.annotation.SuppressLint;
 import android.util.Log;
 
 import java.security.cert.X509Certificate;
@@ -17,11 +18,15 @@ public class shareData {
     public static final int NewThreadFlag = -1;
     public static Classes.SettingsData config = null;
     public static String DATAFILE = "data.json";
+
+    @SuppressLint("CustomX509TrustManager")
     static X509TrustManager trustAllCerts = new X509TrustManager() {
+        @SuppressLint("TrustAllX509TrustManager")
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType) {
         }
 
+        @SuppressLint("TrustAllX509TrustManager")
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType) {
         }
@@ -31,6 +36,9 @@ public class shareData {
             return new X509Certificate[0];
         }
     };
+    /**
+     * @noinspection unused
+     */
     static HostnameVerifier hostnameVerifier = (hostname, session) -> true;
     static SSLContext sslContext = null;
 

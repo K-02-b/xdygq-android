@@ -6,6 +6,9 @@ import java.util.List;
 
 public class Classes {
 
+    /**
+     * @noinspection unused
+     */
     public static class Word {
         public String word;
         public Integer outPosition;
@@ -50,6 +53,10 @@ public class Classes {
         public int textSize = 15;
         public boolean submitToServer = false;
         public boolean popWarning = true;
+        public int callTimeout = 30000;
+        public int connectTimeout = 10000;
+        public int readTimeout = 30000;
+        public int retryTimes = 8;
     }
 
     public static class Count {
@@ -70,6 +77,9 @@ public class Classes {
         }
     }
 
+    /**
+     * @noinspection unused
+     */
     public static class Compat {
         public String content;
         public int id;
@@ -116,7 +126,7 @@ public class Classes {
             textSize = _s;
             minWidth = 0;
         }
-        
+
         public Compat(String _c, int _i, String _t, int _s, int _w) {
             content = _c;
             id = _i;

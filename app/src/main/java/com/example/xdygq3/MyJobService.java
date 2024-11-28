@@ -1,5 +1,6 @@
 package com.example.xdygq3;
 
+import android.annotation.SuppressLint;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
@@ -9,6 +10,7 @@ import android.content.ComponentName;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
+@SuppressLint("SpecifyJobSchedulerIdRange")
 public class MyJobService extends JobService {
     @Override
     public void onCreate() {
